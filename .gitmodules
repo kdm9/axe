@@ -1,3 +1,6 @@
 [submodule "src/kmlib"]
 	path = src/kmlib
 	url = https://github.com/kdmurray91/kmlib.git
+[submodule "test/tinytest"]
+	path = test/tinytest
+	url = https://github.com/nmathewson/tinytest.git
