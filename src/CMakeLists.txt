@@ -1,0 +1,6 @@
+# Targets
+FILE(GLOB DATRIE_SRC libdatrie/*.c)
+ADD_EXECUTABLE(trieBCD trieBCD_main.c)
+ADD_LIBRARY(tbd STATIC ${DATRIE_SRC} trieBCD.c)
+TARGET_LINK_LIBRARIES(trieBCD km z tbd)
+INSTALL(TARGETS trieBCD DESTINATION "bin")
