@@ -4,3 +4,6 @@
 [submodule "test/tinytest"]
 	path = test/tinytest
 	url = https://github.com/nmathewson/tinytest.git
+[submodule "tests/tinytest"]
+	path = tests/tinytest
+	url = https://github.com/nmathewson/tinytest.git
