@@ -75,8 +75,49 @@ end:
     ;
 }
 
+void
+test_hamming_mutate (void *ptr)
+{
+    char **mutated = NULL;
+    size_t count = 0;
+    size_t iii = 0;
+    const char *str = "AAAA";
+    const char *truth[] = {
+        "AAAA", "ACAA", "AGAA", "ATAA", "CAAA", "CCAA", "CGAA", "CTAA", "GAAA",
+        "GCAA", "GGAA", "GTAA", "TAAA", "TCAA", "TGAA", "TTAA", "AAAA", "AACA",
+        "AAGA", "AATA", "CAAA", "CACA", "CAGA", "CATA", "GAAA", "GACA", "GAGA",
+        "GATA", "TAAA", "TACA", "TAGA", "TATA", "AAAA", "AAAC", "AAAG", "AAAT",
+        "CAAA", "CAAC", "CAAG", "CAAT", "GAAA", "GAAC", "GAAG", "GAAT", "TAAA",
+        "TAAC", "TAAG", "TAAT", "AAAA", "AACA", "AAGA", "AATA", "ACAA", "ACCA",
+        "ACGA", "ACTA", "AGAA", "AGCA", "AGGA", "AGTA", "ATAA", "ATCA", "ATGA",
+        "ATTA", "AAAA", "AAAC", "AAAG", "AAAT", "ACAA", "ACAC", "ACAG", "ACAT",
+        "AGAA", "AGAC", "AGAG", "AGAT", "ATAA", "ATAC", "ATAG", "ATAT", "AAAA",
+        "AAAC", "AAAG", "AAAT", "AACA", "AACC", "AACG", "AACT", "AAGA", "AAGC",
+        "AAGG", "AAGT", "AATA", "AATC", "AATG", "AATT", };
+
+    mutated  = hamming_mutate_dna(&count, str, strlen(str), 2, 1);
+    tt_ptr_op(mutated, !=, NULL);
+    tt_int_op(count, ==, 96);
+    for (iii = 0; iii < count; iii++) {
+        tt_ptr_op(mutated[iii], !=, NULL);
+        tt_str_op(mutated[iii], ==, truth[iii]);
+    }
+
+end:
+    if (mutated != NULL) {
+        for (iii = 0; iii < count; iii++) {
+            if (mutated[iii] != NULL) {
+                free(mutated[iii]);
+            }
+        }
+        free(mutated);
+
+    }
+}
+
 struct testcase_t core_tests[] = {
     { "combinations", test_combinations, 0, NULL, NULL},
     { "product", test_product, 0, NULL, NULL},
+    { "hamming_mutate", test_hamming_mutate, 0, NULL, NULL},
     END_OF_TESTCASES
 };
