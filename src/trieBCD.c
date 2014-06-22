@@ -193,7 +193,6 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
                 km_free(tmp);
                 continue;
             } else {
-                printf("%s\n", tmp);
                 if (results + 1 > results_alloced) {
                     results_alloced = kmroundupz(results_alloced);
                     result = km_realloc(result,
@@ -204,5 +203,7 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
             }
         }
     }
+    *n_results_o = results;
+    return result;
 }
 
