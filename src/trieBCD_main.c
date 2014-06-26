@@ -79,14 +79,37 @@ print_usage()
     fprintf(stderr, "\n");
 }
 
+static const char *tdb_opts = "m:z:c2b:f:F:r:R:i:I:hv";
+static const struct options tbd_longopts[] = {
+    { "mismatch",   optional_argument,  NULL,   'm' },
+    { "ziplevel",   required_argument,  NULL,   'z' },
+    { "combinatorial", no_argument,     NULL,   'c' },
+    { "trim-r2",    no_argument,        NULL,   '2' },
+    { "barcodes",   required_argument,  NULL,   'b' },
+    { "fwd-in",     required_argument,  NULL,   'f' },
+    { "fwd-out",    required_argument,  NULL,   'F' },
+    { "rev-in",     required_argument,  NULL,   'r' },
+    { "rev-out",    required_argument,  NULL,   'R' },
+    { "ilfq-in",    required_argument,  NULL,   'i' },
+    { "ilfq-out",   required_argument,  NULL,   'I' },
+    { "help",       no_argument,        NULL,   'h' },
+    { "version",    no_argument,        NULL,   'V' },
+    { NULL,         0,                  NULL,    0  }
+};
+
 static int
 parse_args(struct tbd_config *config, int argc, const char **argv)
 {
+    int c = 0;
+    int optind = 0;
+
     if (!tbd_config_ok(config) || argc < 1 || argv == NULL) {
         return -1;
     }
+    while ((c = getopt_long(argc, argv, tbd_opts, tbd_longopts, &optind)) > 0){
+        ...
+    }
     config->have_cli_opts = 1;
-
     return 2;
 }
 
@@ -108,7 +131,9 @@ main (int argc, const char **argv)
         }
         goto end;
     }
-    ret = tbd_load_barcodes(config);
+    ret = tbd_read_barcodes(config);
+    if (ret != 0) goto end;
+    ret = tbd_load_tries_and_make_ouputs(config);
     if (ret != 0) goto end;
 end:
     tbd_config_destroy(config);
