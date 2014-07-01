@@ -21,11 +21,16 @@
 
 #include <getopt.h>
 
+static void
+print_version(void)
+{
+    fprintf(stderr, "trieBCD Version %s\n", TRIEBCD_VERSION);
+    exit(0);
+}
 
 static void
-print_help()
+print_help(void)
 {
-
     fprintf(stderr, "All mandatory short options are mandatory in their\n");
     fprintf(stderr, "long option form. Likewise, all short options that take\n");
     fprintf(stderr, "an argument must be given an argument in their long form\n");
@@ -53,18 +58,18 @@ print_help()
     fprintf(stderr, "...\n");
     fprintf(stderr, "\n");
 }
+
 static void
-print_usage()
+print_usage(void)
 {
-    fprintf(stderr, "trieBCD\n\n");
     fprintf(stderr, "Demultiplex 5' barcoded reads quickly and accurately.\n\n");
     fprintf(stderr, "USAGE:\n");
-    fprintf(stderr, "trieBCD [-mzc2] -b (-f [-r] | -i) (-F [-R] | -C)\n");
+    fprintf(stderr, "trieBCD [-mzc2] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)\n");
     fprintf(stderr, "trieBCD -h\n");
     fprintf(stderr, "trieBCD -v\n\n");
     fprintf(stderr, "OPTIONS:\n");
     fprintf(stderr, "    -m, --mismatch\tMaximum hamming distance mismatch. [int, default 1]\n");
-    fprintf(stderr, "    -z, --ziplevel\tGzip compression level, or -1 for plain text [int, default -1]\n");
+    fprintf(stderr, "    -z, --ziplevel\tGzip compression level, or 0 for plain text [int, default 0]\n");
     fprintf(stderr, "    -c, --combinatorial\tUse combinatorial barcode matching. [flag, default OFF]\n");
     fprintf(stderr, "    -2, --trim-r2\tTrim barcode from R2 read as well as R1. [flag, default OFF]\n");
     fprintf(stderr, "    -b, --barcodes\tBarcode file. See --help for example. [file]\n");
@@ -74,13 +79,15 @@ print_usage()
     fprintf(stderr, "    -R, --rev-out\tOutput reverse read prefix. [file]\n");
     fprintf(stderr, "    -i, --ilfq-in\tInput interleaved paired reads. [file]\n");
     fprintf(stderr, "    -I, --ilfq-out\tOutput interleaved paired reads prefix. [file]\n");
+    fprintf(stderr, "    -u, --unknown-r1\tUnknown barcode forward/interleaved read file. [file]\n");
+    fprintf(stderr, "    -U, --unknown-r2\tUnknown barcode reverse read file. [file]\n");
     fprintf(stderr, "    -h, --help\t\tPrint this usage plus additional help.\n");
     fprintf(stderr, "    -v, --version\tPrint version string.\n");
     fprintf(stderr, "\n");
 }
 
-static const char *tdb_opts = "m:z:c2b:f:F:r:R:i:I:hv";
-static const struct options tbd_longopts[] = {
+static const char *tbd_opts = "m:z:c2b:f:F:r:R:i:I:u:U:hV";
+static const struct option tbd_longopts[] = {
     { "mismatch",   optional_argument,  NULL,   'm' },
     { "ziplevel",   required_argument,  NULL,   'z' },
     { "combinatorial", no_argument,     NULL,   'c' },
@@ -98,23 +105,250 @@ static const struct options tbd_longopts[] = {
 };
 
 static int
-parse_args(struct tbd_config *config, int argc, const char **argv)
+parse_args(struct tbd_config *config, int argc, char * const *argv)
 {
     int c = 0;
     int optind = 0;
 
     if (!tbd_config_ok(config) || argc < 1 || argv == NULL) {
-        return -1;
+        goto error;
     }
+    /* Set some sane defaults */
+    /* Most things will default to 0, and we calloc the config struct, so we
+     * don't need to explicity set them. */
+    config->mismatches = 1;
+    /* Parse argv using getopt */
     while ((c = getopt_long(argc, argv, tbd_opts, tbd_longopts, &optind)) > 0){
-        ...
+        switch (c) {
+            case 'm':
+                config->mismatches = atol(optarg);
+                break;
+            case 'z':
+                config->out_compress_level = atoi(optarg);
+                break;
+            case 'c':
+                config->match_combo = 1;
+                break;
+            case '2':
+                config->trim_rev = 1;
+                break;
+            case 'b':
+                config->barcode_file = strdup(optarg);
+                break;
+            case 'f':
+                if (config->in_mode == READS_INTERLEAVED) {
+                    goto error;
+                    break;
+                }
+                config->infiles[0] = strdup(optarg);
+                if (config->in_mode == READS_UNKNOWN) {
+                    config->in_mode = READS_SINGLE;
+                }
+                break;
+            case 'F':
+                config->out_prefixes[0] = strdup(optarg);
+                config->out_mode = READS_SINGLE;
+                break;
+            case 'r':
+                if (config->in_mode == READS_INTERLEAVED) {
+                    goto error;
+                    break;
+                }
+                config->infiles[1] = strdup(optarg);
+                config->in_mode = READS_PAIRED;
+                break;
+            case 'R':
+                config->out_prefixes[1] = strdup(optarg);
+                config->out_mode = READS_PAIRED;
+                break;
+            case 'u':
+                config->unknown_files[0] = strdup(optarg);
+                break;
+            case 'U':
+                config->unknown_files[1] = strdup(optarg);
+                break;
+            case 'h':
+                goto help;
+            case 'V':
+                goto version;
+            case '?':
+            default:
+                /* Getopt long prints its own error msg */
+                goto error;
+        }
     }
+    /* Check options are sane */
+    if (config->barcode_file == NULL) {
+        fprintf(stderr, "ERROR: Barcode file must be provided\n");
+        goto error;
+    }
+    if (config->mismatches > 4) {
+        fprintf(stderr, "ERROR: Silly mismatch level %zu\n",
+                config->mismatches);
+        goto error;
+    }
+    if (config->in_mode == READS_UNKNOWN) {
+        fprintf(stderr, "ERROR: Input file(s) must be provided\n");
+        goto error;
+    }
+    if (config->infiles[0] == NULL) {
+        switch (config->in_mode) {
+            case READS_SINGLE:
+                fprintf(stderr, "ERROR: Setting forward read input file failed.\n");
+                break;
+            case READS_PAIRED:
+                fprintf(stderr, "ERROR: Forward read file must be provided.\n");
+                break;
+            case READS_INTERLEAVED:
+                fprintf(stderr, "ERROR: Setting interleaved input file failed.\n");
+                break;
+            default:
+                break;
+        }
+        goto error;
+    }
+    if (config->infiles[1] == NULL) {
+        switch (config->in_mode) {
+            case READS_SINGLE:
+            case READS_INTERLEAVED:
+                /* Not an error */
+                break;
+            case READS_PAIRED:
+                fprintf(stderr, "ERROR: Setting revese read input file failed.\n");
+                goto error;
+                break;
+                fprintf(stderr, "ERROR: Setting interleaved input file failed.\n");
+                goto error;
+                break;
+            default:
+                goto error;
+                break;
+        }
+    }
+    if (config->infiles[1] != NULL) {
+        switch (config->in_mode) {
+            case READS_PAIRED:
+                /* Not an error */
+                break;
+            case READS_INTERLEAVED:
+                fprintf(stderr, "ERROR: Revese read input file set in interleaved mode.\n");
+                goto error;
+                break;
+            default:
+                /* Misc weirdness */
+                goto error;
+                break;
+        }
+    }
+    if (config->out_prefixes[0] == NULL) {
+        switch (config->out_mode) {
+            case READS_SINGLE:
+                fprintf(stderr, "ERROR: Setting forward read output prefix failed.\n");
+                break;
+            case READS_PAIRED:
+                fprintf(stderr, "ERROR: Forward read prefix must be provided.\n");
+                break;
+            case READS_INTERLEAVED:
+                fprintf(stderr, "ERROR: Setting interleaved output prefix failed.\n");
+                break;
+            default:
+                break;
+        }
+        goto error;
+    }
+    if (config->out_prefixes[1] == NULL) {
+        switch (config->out_mode) {
+            case READS_SINGLE:
+            case READS_INTERLEAVED:
+                /* Not an error */
+                break;
+            case READS_PAIRED:
+                fprintf(stderr, "ERROR: Setting revese read output prefix failed.\n");
+                goto error;
+                break;
+                fprintf(stderr, "ERROR: Setting interleaved output prefix failed.\n");
+                goto error;
+                break;
+            default:
+                goto error;
+                break;
+        }
+    }
+    if (config->out_prefixes[1] != NULL) {
+        switch (config->out_mode) {
+            case READS_PAIRED:
+                /* Not an error */
+                break;
+            case READS_INTERLEAVED:
+                fprintf(stderr, "ERROR: Revese read output prefix set in interleaved mode.\n");
+                goto error;
+                break;
+            default:
+                /* Misc weirdness */
+                goto error;
+                break;
+        }
+    }
+    if (config->unknown_files[0] == NULL) {
+        switch (config->out_mode) {
+            case READS_SINGLE:
+            case READS_PAIRED:
+                fprintf(stderr, "ERROR: Forward read unknown barcode output file must be provided.\n");
+                break;
+            case READS_INTERLEAVED:
+                fprintf(stderr, "ERROR: Interleaved paired read unknown barcode output file must be provided.\n");
+                break;
+            default:
+                break;
+        }
+        goto error;
+    }
+    if (config->unknown_files[1] == NULL) {
+        switch (config->out_mode) {
+            case READS_PAIRED:
+                fprintf(stderr, "ERROR: Reverse read unknown barcode output file must be provided.\n");
+                goto error;
+                break;
+            case READS_SINGLE:
+            case READS_INTERLEAVED:
+                break;
+            default:
+                goto error;
+                break;
+        }
+    }
+    if (config->unknown_files[1] != NULL) {
+        switch (config->out_mode) {
+            case READS_PAIRED:
+                break;
+            case READS_SINGLE:
+            case READS_INTERLEAVED:
+                fprintf(stderr, "ERROR: Reverse read unknown output file cannot");
+                fprintf(stderr, " be provided with interleaved/single end output.\n");
+                goto error;
+                break;
+            default:
+                goto error;
+                break;
+        }
+    }
+
     config->have_cli_opts = 1;
+    return 0;
+version:
+    tbd_config_destroy(config);
+    print_version();
+    return 0;
+help:
+    config->have_cli_opts = 0;
     return 2;
+error:
+    config->have_cli_opts = 0;
+    return 1;
 }
 
 int
-main (int argc, const char **argv)
+main (int argc, char * const *argv)
 {
     int ret = 0;
     struct tbd_config *config = tbd_config_create();
