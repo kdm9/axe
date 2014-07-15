@@ -19,21 +19,11 @@
 #include "trieBCD.h"
 
 struct tbd_barcode *
-tbd_barcode_create(const char *seq, size_t len)
+tbd_barcode_create(void)
 {
     struct tbd_barcode *bcd = NULL;
 
-    if (seq == NULL || len < 1) {
-        return NULL;
-    }
-    bcd = km_malloc(sizeof(*bcd));
-    bcd->seq = strndup(seq, len+1);
-    if (bcd->seq == NULL) {
-        km_free(bcd);
-        return NULL;
-    }
-    bcd->len = len;
-    bcd->count = 0;
+    bcd = km_calloc(1, sizeof(*bcd));
     return bcd;
 }
 
@@ -41,8 +31,11 @@ void
 tbd_barcode_destroy_(struct tbd_barcode *barcode)
 {
     if (!tbd_barcode_ok(barcode)) return;
-    km_free(barcode->seq);
-    barcode->len = 0;
+    km_free(barcode->seq1);
+    km_free(barcode->seq2);
+    km_free(barcode->id);
+    barcode->len1 = 0;
+    barcode->len2 = 0;
     km_free(barcode);
 }
 
@@ -50,6 +43,7 @@ struct tbd_config *
 tbd_config_create(void)
 {
     struct tbd_config *config = km_calloc(1, sizeof(*config));
+
     /* km_calloc never returns null, we use errprintexit as the err handler */
     return config;
 }
@@ -63,7 +57,6 @@ tbd_config_destroy_(struct tbd_config *config)
     if (config == NULL) {
         return;
     }
-
     km_free(config->barcode_file);
     for (iii = 0; iii < 2; iii++) {
         km_free(config->infiles[iii]);
@@ -73,11 +66,23 @@ tbd_config_destroy_(struct tbd_config *config)
     km_free(config->infiles[0]);
     km_free(config->infiles[1]);
     for (iii = 0; iii < config->n_barcodes_1; iii ++) {
-        for (jjj = 0; jjj < config->n_barcodes_2; jjj++) {
-            tbd_output_destroy(config->outputs[iii][jjj]);
-            tbd_barcode_destroy(config->barcodes[iii][jjj]);
+        if (config->n_barcodes_2 == 0) {
+            /* Special case, as we store it as though we have a reverse read
+               barcode & we can't do ``for (;0<0;) {blah}`` or nothing gets
+               written out. */
+            tbd_output_destroy(config->outputs[iii][0]);
+        } else {
+            for (jjj = 0; jjj < config->n_barcodes_2; jjj++) {
+                tbd_output_destroy(config->outputs[iii][jjj]);
+            }
         }
+        km_free(config->outputs[iii]);
     }
+    km_free(config->outputs);
+    for (iii = 0; iii < config->n_barcode_pairs; iii++) {
+        tbd_barcode_destroy(config->barcodes[iii]);
+    }
+    km_free(config->barcodes);
     tbd_output_destroy(config->unknown_output);
 }
 
@@ -92,7 +97,11 @@ _tbd_format_outfile_path (const char *prefix, const char *id, int read,
     if (prefix == NULL || id == NULL) {
         return NULL;
     }
-    res = snprintf(buf, 4096, "%s_%s_R%d.%s", prefix, id, read, ext);
+    if (read > 0) {
+        res = snprintf(buf, 4096, "%s_%s_R%d.%s", prefix, id, read, ext);
+    } else {
+        res = snprintf(buf, 4096, "%s_%s.%s", prefix, id, ext);
+    }
     if (res >= 4096) {
         return NULL;
     }
@@ -112,15 +121,21 @@ tbd_output_create(const char *fwd_fpath, const char *rev_fpath,
     out = km_calloc(1, sizeof(*out));
     out->mode = mode;
     out->fwd_file = seqfile_create(fwd_fpath, fp_mode);
+    seqfile_set_format(out->fwd_file, FASTQ_FMT);
     if (out->fwd_file == NULL) {
         km_free(out);
         return NULL;
     }
-    out->rev_file = seqfile_create(rev_fpath, fp_mode);
-    if (out->rev_file == NULL) {
-        seqfile_destroy(out->fwd_file);
-        km_free(out);
-        return NULL;
+    if (rev_fpath != NULL) {
+        out->rev_file = seqfile_create(rev_fpath, fp_mode);
+        if (out->rev_file == NULL) {
+            seqfile_destroy(out->fwd_file);
+            km_free(out);
+            return NULL;
+        }
+        seqfile_set_format(out->rev_file, FASTQ_FMT);
+    } else {
+        out->rev_file = NULL;
     }
     out->count = 0;
     return out;
@@ -137,57 +152,558 @@ tbd_output_destroy_(struct tbd_output *output)
     }
 }
 
-int
-tbd_load_barcodes(struct tbd_config *config)
+static inline struct tbd_barcode *
+read_barcode_combo(char *line)
 {
-    intptr_t barcode_idx = 0;
-    size_t iii = 0;
-    int retval = -1;
+    char seq1[100] = "";
+    char seq2[100] = "";
+    char id[100] = "";
+    int res = 0;
+    struct tbd_barcode *barcode = NULL;
 
-    if (!tbd_config_ok(config) || !config->have_cli_opts) {
-        return -1;
+    if (line == NULL) {
+        return NULL;
     }
-    /* Create and alloc tries */
-    config->tries = km_malloc(config->mismatches * sizeof(*config->tries));
-    for (iii = 0; iii < config->mismatches; iii++) {
-        config->tries[iii] = tbd_trie_create();
-        if (config->tries[iii] == NULL) {
-            km_free(config->tries);
-            return 1;
-        }
+    res = sscanf(line, "%99s\t%99s\t%99s", seq1, seq2, id);
+    if (res < 3) {
+        return NULL;
     }
-    seqfile_t *bcd_sf = seqfile_create(config->barcode_file, "r");
-    SEQFILE_ITER_SINGLE_BEGIN(bcd_sf, this_bcd, bcd_ln)
-        char **mutated = NULL;
-        size_t num_mutated = 0;
-        size_t jjj = 0;
-        int ret = 0;
+    barcode = tbd_barcode_create();
+    if (barcode != NULL) {
+        return NULL;
+    }
+    /* Duplicate on the heap the R1 seq */
+    barcode->seq1 = strndup(seq1, 100);
+    if (barcode->seq1 == NULL) goto error;
+    barcode->len1 = strnlen(seq1, 100);
+    /* Second barcode too */
+    barcode->seq2 = strndup(seq2, 100);
+    if (barcode->seq2 == NULL) goto error;
+    barcode->len2 = strnlen(seq2, 100);
+    /* And the ID */
+    barcode->id = strndup(id, 100);
+    if (barcode->id == NULL) goto error;
+    barcode->idlen = strnlen(id, 100);
+    return barcode;
+error:
+    tbd_barcode_destroy(barcode);
+    return NULL;
+}
 
-        /* Make mutated barcodes and add to trie */
-        for (iii = 0; iii < config->mismatches; iii++) {
-            mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq.s,
-                                         this_bcd->seq.l, iii, 0);
-            for (jjj = 0; jjj < num_mutated; jjj++) {
-                ret = tbd_trie_add(config->tries[iii], mutated[jjj],
-                             barcode_idx);
-                if (ret != 0) {
-                    printf("Big fuckup about here\n"); /* TODO */
-                    retval = 1;
-                    break;
-                }
-            }
-        }
-        /* Open barcode files */
-        /* TODO */
-        barcode_idx++;
-    SEQFILE_ITER_SINGLE_END(this_bcd)
-    return retval;
+static inline struct tbd_barcode *
+read_barcode_single(char *line)
+{
+    char seq[100] = "";
+    char id[100] = "";
+    int res = 0;
+    struct tbd_barcode * barcode = NULL;
+
+    if (line == NULL) {
+        return NULL;
+    }
+    res = sscanf(line, "%99s\t%99s", seq, id);
+    if (res < 2) {
+        return NULL;
+    }
+    barcode = tbd_barcode_create();
+    if (barcode == NULL) {
+        return NULL;
+    }
+    /* Duplicate on the heap the R1 seq */
+    barcode->seq1 = strndup(seq, 100);
+    if (barcode->seq1 == NULL) goto error;
+    barcode->len1 = strnlen(seq, 100);
+    /* And the ID */
+    barcode->id = strndup(id, 100);
+    if (barcode->id == NULL) goto error;
+    barcode->idlen = strnlen(id, 100);
+    return barcode;
+error:
+    tbd_barcode_destroy(barcode);
+    return NULL;
 }
 
 int
-combinations(uint64_t len, uint64_t elem, uintptr_t *choices)
+tbd_read_barcodes(struct tbd_config *config)
 {
-    int at_start = 1;
+    zfile_t *zf = NULL;
+    struct tbd_barcode *this_barcode = NULL;
+    struct tbd_barcode **barcodes = NULL;
+    size_t n_barcodes = 0;
+    size_t n_barcodes_alloced = 8;
+    char *line = NULL;
+    size_t linesz = 0;
+    ssize_t linelen = 0;
+    size_t iii = 0;
+    int tmp = 0;
+    struct tbd_trie *seq1_trie = NULL;
+    struct tbd_trie *seq2_trie = NULL;
+
+    if (!tbd_config_ok(config)) {
+        return -1;
+    }
+    barcodes = km_calloc(n_barcodes_alloced, sizeof(*barcodes));
+    zf = zfopen(config->barcode_file, "r");
+    line = km_malloc(128);
+    if (config->match_combo) {
+        seq1_trie = tbd_trie_create();
+        seq2_trie = tbd_trie_create();
+    }
+    while ((linelen = zfreadline_realloc(zf, &line, &linesz)) > 0) {
+        if (strncmp(line, "Barcode", 7) == 0 || \
+            strncmp(line, "barcode", 7) == 0) {
+            continue;
+        }
+        if (n_barcodes + 1 >= n_barcodes_alloced) {
+            n_barcodes_alloced *= 2;
+            barcodes = km_realloc(barcodes,
+                                  n_barcodes_alloced * sizeof(*barcodes));
+        }
+        if (config->match_combo) {
+            this_barcode = read_barcode_combo(line);
+            barcodes[n_barcodes++] = this_barcode;
+            if (this_barcode == NULL) {
+                goto error;
+            }
+            if (!trie_retrieve(seq1_trie->trie, this_barcode->seq1, &tmp)) {
+                tbd_trie_add(seq1_trie, this_barcode->seq1, 0);
+            }
+            if (!trie_retrieve(seq2_trie->trie, this_barcode->seq2, &tmp)) {
+                tbd_trie_add(seq2_trie, this_barcode->seq2, 0);
+            }
+        } else {
+            this_barcode = read_barcode_single(line);
+            barcodes[n_barcodes++] = this_barcode;
+            if (this_barcode == NULL) {
+                goto error;
+            }
+        }
+    }
+    config->barcodes = barcodes;
+    config->n_barcode_pairs = n_barcodes;
+    config->n_barcodes_1 = n_barcodes;
+    config->n_barcodes_2 = 0;
+    return 0;
+error:
+    if (barcodes != NULL) {
+        for (iii = 0; iii < n_barcodes - 1; iii++) {
+            tbd_barcode_destroy(barcodes[iii]);
+        }
+    }
+    return 1;
+}
+
+int
+tbd_make_tries(struct tbd_config *config)
+{
+    size_t iii = 0;
+
+    if (!tbd_config_ok(config)) {
+        return -1;
+    }
+    /* Create and alloc tries */
+    config->fwd_tries = km_malloc(config->mismatches *
+                                  sizeof(*config->fwd_tries));
+    for (iii = 0; iii <= config->mismatches; iii++) {
+        config->fwd_tries[iii] = tbd_trie_create();
+        if (config->fwd_tries[iii] == NULL) {
+            fprintf(stderr,
+                    "[make_tries] ERROR: tbd_trie_create returned NULL\n");
+            km_free(config->fwd_tries);
+            return 1;
+        }
+    }
+    if (config->match_combo) {
+        config->rev_tries = km_malloc(config->mismatches * \
+                                      sizeof(*config->rev_tries));
+        for (iii = 0; iii <= config->mismatches; iii++) {
+            config->rev_tries[iii] = tbd_trie_create();
+            if (config->rev_tries[iii] == NULL) {
+                km_free(config->rev_tries);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static char *
+tbd_make_file_ext(const struct tbd_config *config)
+{
+    if (!tbd_config_ok(config)) {
+        return NULL;
+    }
+    if (config->out_mode == READS_INTERLEAVED) {
+        if (config->out_compress_level > 1) {
+            return strdup("ilfq.gz");
+        }
+        return strdup("ilfq");
+    }
+    if (config->out_compress_level > 1) {
+        return strdup("fastq.gz");
+    }
+    return strdup("fastq");
+}
+
+static char *
+tbd_make_zmode(const struct tbd_config *config)
+{
+    if (!tbd_config_ok(config)) {
+        return NULL;
+    }
+    if (config->out_compress_level > 1) {
+        char tmp[10] = "";
+        snprintf(tmp, 9, "w%d", config->out_compress_level);
+        return strdup(tmp);
+    }
+    return strdup("wT");
+}
+
+static inline int
+make_outputs_combo(struct tbd_config *config)
+{
+    size_t bcd1 = 0;
+    size_t bcd2 = 0;
+
+    if (!tbd_config_ok(config)) {
+        return -1;
+    }
+    /* Open barcode files */
+    for (bcd1 = 0; bcd1 < config->n_barcodes_1; bcd1++) {
+        for (bcd2 = 0; bcd2 < config->n_barcodes_2; bcd2++) {
+        }
+    }
+    return -1;
+}
+
+static inline int
+load_tries_make_outputs_combo(struct tbd_config *config)
+{
+    /* TODO here */
+    int bcd1 = 0;
+    int bcd2 = 0;
+    int retval = 0;
+    char **mutated = NULL;
+    size_t num_mutated = 0;
+    int ret = 0;
+    size_t iii = 0;
+    size_t jjj = 0;
+    size_t mmm = 0;
+    struct tbd_barcode *this_bcd = NULL;
+
+    /* TODO: remove this once this func is implemented. */
+    return -1;
+    if (!tbd_config_ok(config)) {
+        fprintf(stderr, "[load_tries] Bad config\n");
+        return -1;
+    }
+    /* Make mutated barcodes and add to trie */
+    for (iii = 0; iii < config->n_barcode_pairs; iii++) {
+        this_bcd = config->barcodes[iii];
+        if (!tbd_barcode_ok(this_bcd)) {
+            fprintf(stderr, "[load_tries] Bad barcode at %zu\n", iii);
+            return -1;
+        }
+        /* Either lookup the index of the first read in the barcode table, or
+         * insert this barcode into the table, storing its index.
+         * Note the NOT here. */
+        if (!trie_retrieve(config->fwd_tries[0]->trie, this_bcd->seq1, &bcd1)) {
+            bcd1 = config->n_barcodes_1++;
+            ret = tbd_trie_add(config->fwd_tries[0], this_bcd->seq1, iii);
+            if (ret != 0) {
+                fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
+                        this_bcd->seq1, iii);
+                return 1;
+            }
+        }
+        /* Likewise for the reverse read index */
+        if (!trie_retrieve(config->rev_tries[0]->trie, this_bcd->seq2, &bcd2)) {
+            bcd2 = config->n_barcodes_2++;
+            ret = tbd_trie_add(config->rev_tries[0], this_bcd->seq2, iii);
+            if (ret != 0) {
+                fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
+                        this_bcd->seq2, iii);
+                return 1;
+            }
+        }
+        for (jjj = 1; jjj <= config->mismatches; jjj++) {
+            /* Do the forwards read barcode */
+            mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq1,
+                                         this_bcd->len1, jjj, 0);
+            for (mmm = 0; mmm < num_mutated; mmm++) {
+                ret = tbd_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
+                if (ret != 0) {
+                    fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)",
+                            config->ignore_barcode_confict ? "WARNING": "ERROR",
+                            mutated[mmm], (int)jjj);
+                    return 1;
+                }
+                km_free(mutated[mmm]);
+            }
+            km_free(mutated);
+            /* Ditto for the reverse read */
+            mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq2,
+                                         this_bcd->len2, iii, 0);
+            for (mmm = 0; mmm < num_mutated; mmm++) {
+                ret = tbd_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
+                if (ret != 0) {
+                    fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)",
+                            config->ignore_barcode_confict ? "WARNING": "ERROR",
+                            mutated[mmm], (int)jjj);
+                    return 1;
+                }
+                km_free(mutated[mmm]);
+            }
+            km_free(mutated);
+        }
+    }
+    return retval;
+}
+
+static inline int
+load_tries_single(struct tbd_config *config)
+{
+    char **mutated = NULL;
+    size_t num_mutated = 0;
+    int ret = 0;
+    size_t iii = 0;
+    int jjj = 0;
+    size_t mmm = 0;
+    int tmp = 0;
+    struct tbd_barcode *this_bcd = NULL;
+
+    if (!tbd_config_ok(config)) {
+        fprintf(stderr, "[load_tries] Bad config\n");
+        return -1;
+    }
+    /* Make mutated barcodes and add to trie */
+    for (iii = 0; iii < config->n_barcodes_1; iii++) {
+        this_bcd = config->barcodes[iii];
+        if (!tbd_barcode_ok(this_bcd)) {
+            fprintf(stderr, "[load_tries] Bad barcode at %zu\n", iii);
+            return -1;
+        }
+        /* Either lookup the index of the first read in the barcode table, or
+         * insert this barcode into the table, storing its index.
+         * Note the NOT here. */
+        if (!trie_retrieve(config->fwd_tries[0]->trie, this_bcd->seq1, &tmp)) {
+            ret = tbd_trie_add(config->fwd_tries[0], this_bcd->seq1, iii);
+            if (ret != 0) {
+                fprintf(stderr,
+                        "ERROR: Could not load barcode %s into trie %zu\n",
+                        this_bcd->seq1, iii);
+                return 1;
+            }
+            TBD_DEBUG_LOG("[load_tries] New r1 barcode (not in trie)\n");
+        } else {
+            fprintf(stderr, "ERROR: Duplicate barcode %s\n", this_bcd->seq1);
+            return 1;
+        }
+        for (jjj = 1; jjj <= config->mismatches; jjj++) {
+            TBD_DEBUG_LOG("[load_tries] Mutating r1 barcode\n");
+            mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq1,
+                                         this_bcd->len1, jjj, 0);
+            TBD_DEBUG_LOG("[load_tries] Mutated r1 barcode\n");
+            for (mmm = 0; mmm < num_mutated; mmm++) {
+                ret = tbd_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
+                if (ret != 0) {
+                    fprintf(stderr,
+                            "[load_barcodes] %s: Barcode %s already in trie (%dmm)\n",
+                            config->ignore_barcode_confict ? "WARNING": "ERROR",
+                            mutated[mmm], (int)jjj);
+                    return 1;
+                }
+                km_free(mutated[mmm]);
+            }
+            km_free(mutated);
+            num_mutated = 0;
+        }
+    }
+    return 0;
+}
+
+static inline int
+make_outputs_single(struct tbd_config *config)
+{
+    size_t iii = 0;
+    char *name_fwd = NULL;
+    char *file_ext = NULL;
+    char *zmode = NULL;
+    struct tbd_barcode *this_bcd = NULL;
+
+    if (!tbd_config_ok(config)) {
+        fprintf(stderr, "[make_outputs] Bad config\n");
+        return -1;
+    }
+    file_ext = tbd_make_file_ext(config);
+    zmode = tbd_make_zmode(config);
+    config->outputs = km_calloc(config->n_barcodes_1,
+                                 sizeof(*config->outputs));
+    for (iii = 0; iii < config->n_barcodes_1; iii++) {
+        this_bcd = config->barcodes[iii];
+        config->outputs[iii] = km_calloc(1, sizeof(**config->outputs));
+        /* Open barcode files */
+        if (config->out_mode == READS_SINGLE) {
+            name_fwd = _tbd_format_outfile_path(config->out_prefixes[0],
+                                                this_bcd->id, 1, file_ext);
+        } else if (config->out_mode == READS_INTERLEAVED) {
+            name_fwd =  _tbd_format_outfile_path(config->out_prefixes[0],
+                                                this_bcd->id, 0, file_ext);
+        }
+        config->outputs[iii][0] = tbd_output_create(name_fwd, NULL,
+                                                    config->in_mode, zmode);
+
+        if (config->outputs[iii][0] == NULL) {
+            fprintf(stderr, "[make_outputs] couldn't create file at %s\n",
+                    name_fwd);
+            goto error;
+        }
+    }
+    config->unknown_output = tbd_output_create(config->unknown_files[0],
+                                               config->unknown_files[1],
+                                               config->in_mode, zmode);
+    return 0;
+error:
+    return 1;
+}
+
+int
+tbd_load_tries(struct tbd_config *config)
+{
+    if (!tbd_config_ok(config)) {
+        return -1;
+    }
+    if (config->match_combo) {
+        return load_tries_make_outputs_combo(config);
+    } else {
+        return load_tries_single(config);
+    }
+}
+
+int
+tbd_make_outputs(struct tbd_config *config)
+{
+    if (!tbd_config_ok(config)) {
+        return -1;
+    }
+    if (config->match_combo) {
+        return load_tries_make_outputs_combo(config);
+    } else {
+        return make_outputs_single(config);
+    }
+}
+
+
+static int
+process_file_single(struct tbd_config *config)
+{
+    seqfile_t *insf = NULL;
+    struct tbd_output *outsf1 = NULL;
+    intptr_t bcd1 = -1;
+    size_t iii = 0;
+    int ret = 0;
+    size_t bcd1_len = 0;
+    int have_error = 0;
+
+    if (!tbd_config_ok(config)) {
+        fprintf(stderr, "[process_file] Bad config struct\n");
+        return -1;
+    }
+    insf = seqfile_create(config->infiles[0], "r");
+    if (insf == NULL) {
+        fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
+                config->infiles[0]);
+        goto error;
+    }
+    switch(config->in_mode) {
+        case READS_SINGLE:
+            goto single;
+            break;
+        case READS_INTERLEAVED:
+            goto interleaved;
+            break;
+        default:
+            fprintf(stderr, "[process_file_single] Bad infile mode %i\n",
+                    config->in_mode);
+            goto error;
+            break;
+    }
+single:
+    SEQFILE_ITER_SINGLE_BEGIN(insf, seq, seqlen)
+        ret = 1;
+        for (iii = 0; iii <= config->mismatches; iii++) {
+            ret = tbd_match_read(&bcd1, config->fwd_tries[0], seq);
+            if (ret == 0) {
+                break;
+            }
+        }
+        if (ret != 0) {
+            /* No match */
+            seqfile_write(config->unknown_output->fwd_file, seq);
+            continue;
+        }
+        /* Found a match */
+        outsf1 = config->outputs[bcd1][0];
+        bcd1_len = config->barcodes[bcd1]->len1;
+
+        if (seq->seq.l <= bcd1_len) {
+            /* Don't write out seqs shorter than the barcode */
+            continue;
+        }
+        /* Bit of the ol' switcheroo. We keep the seq's char pointers, so we
+           need to switch them back to their orig. values, but don't want to
+           copy. Kludgy, I know. */
+        seq->seq.s += bcd1_len;
+        seq->seq.l -= bcd1_len;
+        seq->qual.s += bcd1_len;
+        seq->qual.l -= bcd1_len;
+        ret = seqfile_write(outsf1->fwd_file, seq);
+        if (ret < 1) {
+            fprintf(stderr,
+                    "[process_file] Error: writing to outfile %s failed\n%s\n",
+                    outsf1->fwd_file->zf->path, zferror(outsf1->fwd_file->zf));
+            have_error = 1;
+            break;
+        }
+        seq->seq.s -= bcd1_len;
+        seq->seq.l += bcd1_len;
+        seq->qual.s -= bcd1_len;
+        seq->qual.l += bcd1_len;
+        outsf1->count++;
+    SEQFILE_ITER_SINGLE_END(seq)
+    if (!have_error) goto clean_exit;
+    else goto error;
+interleaved:
+    SEQFILE_ITER_INTERLEAVED_BEGIN(insf, seq1, seq2, seqlen1, seqlen2)
+
+    SEQFILE_ITER_INTERLEAVED_END(seq1, seq2)
+    if (!have_error) goto clean_exit;
+    else goto error;
+clean_exit:
+    seqfile_destroy(insf);
+    return 0;
+error:
+    seqfile_destroy(insf);
+    return 1;
+}
+
+int
+tbd_process_file(struct tbd_config *config)
+{
+    if (!tbd_config_ok(config)) {
+        return -1;
+    }
+    if (config->match_combo) {
+        fprintf(stderr, "Combo not Implemented\n");
+        return -2;
+    } else {
+        return process_file_single(config);
+    }
+}
+
+int
+combinations(uint64_t len, uint64_t elem, uintptr_t *choices, int at_start)
+{
     ssize_t iii = 0;
     if (len < elem || choices == NULL) {
         /* error value, so don't use (!ret) as your test for the end of the
@@ -195,9 +711,6 @@ combinations(uint64_t len, uint64_t elem, uintptr_t *choices)
         return -1;
     }
     /* Check if we're at the start, i.e. all items are 0 */
-    for (iii = 0; iii < elem; iii++) {
-        at_start &= choices[iii] == 0;
-    }
     if (at_start) {
         /* In the first iteration, we set the choices to the first ``elem``
            valid choices, i.e., 0 ... elem - 1 */
@@ -271,7 +784,7 @@ product(uint64_t len, uint64_t elem, uintptr_t *choices, int at_start)
 
 char **
 hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
-        int dist, int keep_original)
+                   int dist, int keep_original)
 {
     const char alphabet[] = "ACGT";
     const size_t n_letters = 4;
@@ -288,12 +801,10 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
     if (str == NULL || len < 1 || dist < 1) {
         return NULL;
     }
-
     result = km_malloc(results_alloced * sizeof(*result));
     mut_indicies = km_calloc(dist, sizeof(*mut_indicies));
     alphabet_indicies = km_calloc(dist, sizeof(*alphabet_indicies));
-
-    while ((mut_ret = combinations(len, dist, mut_indicies)) == 1) {
+    while ((mut_ret = combinations(len, dist, mut_indicies, !mut_ret)) == 1) {
         while ((alpha_ret = product(n_letters, dist, alphabet_indicies, !alpha_ret)) == 1) {
             tmp = strndup(str, len+1);
             for (iii = 0; iii < dist; iii++) {
@@ -304,7 +815,6 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
                 }
                 tmp[mut_idx] = replacement;
             }
-
             if (strncmp(str, tmp, len) == 0 && !keep_original) {
                 km_free(tmp);
                 continue;
@@ -334,9 +844,11 @@ tbd_trie_create(void)
     if (map == NULL) {
         return NULL;
     }
-    #define _AM_ADD(chr)                                                        \
+    #define _AM_ADD(chr)                                                    \
     ret = alpha_map_add_range(map, chr, chr);                               \
-    if (ret == 0) {                                                         \
+    if (ret != 0) {                                                         \
+        fprintf(stderr, "[trie_create] Failed to add char %c to alphamap\n",\
+                chr);                                                       \
         alpha_map_free(map);                                                \
         return NULL;                                                        \
     }
@@ -344,6 +856,7 @@ tbd_trie_create(void)
     _AM_ADD('C')
     _AM_ADD('G')
     _AM_ADD('T')
+    _AM_ADD('N')
     #undef _AM_ADD
     trie = km_calloc(1, sizeof(*trie));
     trie->trie = trie_new(map);
@@ -358,15 +871,15 @@ tbd_trie_create(void)
 int
 tbd_trie_add (struct tbd_trie *trie, const char *seq, uintptr_t data)
 {
-    if (!tbd_trie_ok(trie)) return -1;
+    if (!tbd_trie_ok(trie) || seq == NULL) return -1;
     if (trie_store_if_absent(trie->trie, seq, data)) {
         return 0;
     }
     return 1;
 }
 
-int
-tbd_barcode_match (intptr_t *value, struct tbd_trie *trie, const seq_t *seq)
+inline int
+tbd_match_read (intptr_t *value, struct tbd_trie *trie, const seq_t *seq)
 {
     TrieState *trie_iter = NULL;
     size_t seq_pos = 0;
@@ -388,6 +901,7 @@ tbd_barcode_match (intptr_t *value, struct tbd_trie *trie, const seq_t *seq)
     /* Grab tree root iter, and check it. */
     trie_iter = trie_root(trie->trie);
     if (trie_iter == NULL) {
+        fprintf(stderr, "[match_read] trie_root() returned NULL!\n");
         *value = -1;
         return -1;
     }
@@ -398,12 +912,11 @@ tbd_barcode_match (intptr_t *value, struct tbd_trie *trie, const seq_t *seq)
             break;
         }
     }
-    if (trie_state_is_terminal(trie_iter)) {
+    /* We walk the final step w/ EOS char, to "get" the data assocaited w/
+       barcode key */
+    if (trie_state_walk(trie_iter, TRIE_CHAR_TERM)) {
         our_val = trie_state_get_data(trie_iter);
-    } else {
-        goto end;
     }
-end:
     trie_state_free(trie_iter);
     *value = our_val;
     if (our_val != -1) {

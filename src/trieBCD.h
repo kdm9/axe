@@ -34,6 +34,7 @@
  *    0 on success
  *    1 on failure
  *  Thus, one can check success with ret = X(...); if (ret != 0) {panic();}
+ *  If a function returns a pointer, NULL is the error value.
  */
 
 enum read_mode {
@@ -51,15 +52,19 @@ struct tbd_output {
 };
 
 struct tbd_trie {
-    Trie *trie; /* From datrie */
+    Trie *trie; /* From datrie.h */
     int mismatch_level;
     size_t max_len;
     size_t min_len;
 };
 
 struct tbd_barcode {
-    char *seq;
-    size_t len;
+    char *seq1;
+    char *seq2;
+    char *id;
+    size_t len1;
+    size_t len2;
+    size_t idlen;
     uint64_t count;
 };
 
@@ -67,24 +72,25 @@ struct tbd_config {
     char *barcode_file;
     char *infiles[2];
     char *out_prefixes[2];
+    char *unknown_files[2];
+    struct tbd_barcode **barcodes;
     /* Array of output files. Access by cfg->ofs[1st_bcd_idx][2nd_bcd_idx] */
     struct tbd_output ***outputs;
-    struct tbd_barcode ***barcodes;
     size_t n_barcodes_1; /* Number of first read barcodes */
     size_t n_barcodes_2; /* Number of second read barcodes */
+    size_t n_barcode_pairs;
     struct tbd_output *unknown_output; /* output for unknown files */
     enum read_mode in_mode;
     enum read_mode out_mode;
     int out_compress_level;
-    int mismatches;
-    struct tbd_trie **tries;
-    size_t n_tries;
-    int have_cli_opts           :1;
-    int name_outfiles_by_seq    :1;
+    size_t mismatches;
+    struct tbd_trie **fwd_tries;
+    struct tbd_trie **rev_tries;
+    int have_cli_opts           :1; /* Set to 1 once CLI is parsed */
+    int match_combo             :1; /* Match using combinatorial strategy */
+    int ignore_barcode_confict  :1;
+    int trim_rev                :1;
 };
-
-char **hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
-        int dist, int keep_original);
 
 static inline int
 tbd_config_ok(const struct tbd_config *config)
@@ -106,7 +112,18 @@ static inline int
 tbd_barcode_ok(const struct tbd_barcode *barcode)
 {
     if (barcode == NULL) return 0;
-    if (barcode->seq == NULL || barcode->len == 0) return 0;
+    if (barcode->seq1 == NULL || barcode->len1 == 0) return 0;
+    if (barcode->id == NULL || barcode->idlen == 0) return 0;
+    return 1;
+}
+
+static inline int
+tbd_barcode_ok_combo(const struct tbd_barcode *barcode)
+{
+    if (barcode == NULL) return 0;
+    if (barcode->seq1 == NULL || barcode->len1 == 0) return 0;
+    if (barcode->seq2 == NULL || barcode->len2 == 0) return 0;
+    if (barcode->id == NULL || barcode->idlen == 0) return 0;
     return 1;
 }
 
@@ -119,6 +136,13 @@ tbd_output_ok(const struct tbd_output *output)
     if (output->mode == READS_PAIRED && output->rev_file == NULL) return 0;
     return 1;
 }
+
+#if 0
+/* #ifndef NDEBUG */
+#define TBD_DEBUG_LOG(x) STMT_BEGIN fprintf(stderr, x); STMT_END
+#else
+#define TBD_DEBUG_LOG(x) (void)(x);
+#endif
 
 
 /*===  FUNCTION  ============================================================*
@@ -188,7 +212,7 @@ void tbd_trie_destroy_(struct tbd_trie *trie);
     trie = NULL;                                                            \
     STMT_END
 
-struct tbd_barcode *tbd_barcode_create(const char *seq, size_t len);
+struct tbd_barcode *tbd_barcode_create(void);
 void tbd_barcode_destroy_(struct tbd_barcode *barcode);
 #define tbd_barcode_destroy(barcode) STMT_BEGIN                             \
     tbd_barcode_destroy_(barcode);                                          \
@@ -196,10 +220,21 @@ void tbd_barcode_destroy_(struct tbd_barcode *barcode);
     STMT_END
 
 
-int tbd_load_barcodes(struct tbd_config *config);
-int tbd_trie_add(struct tbd_trie *trie, const char *seq, size_t len);
 
+int tbd_read_barcodes(struct tbd_config *config);
+int tbd_make_tries(struct tbd_config *config);
+int tbd_load_tries(struct tbd_config *config);
+int tbd_make_outputs(struct tbd_config *config);
+int tbd_trie_add(struct tbd_trie *trie, const char *seq, size_t len);
+int tbd_process_file(struct tbd_config *config);
+
+extern int tbd_match_read(intptr_t *value, struct tbd_trie *trie,
+                          const seq_t *seq);
 int product(uint64_t len, uint64_t elem, uintptr_t *choices, int at_start);
-int combinations(uint64_t len, uint64_t elem, uintptr_t *choices);
+int combinations(uint64_t len, uint64_t elem, uintptr_t *choices,
+                 int at_start);
+char **hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
+                          int dist, int keep_original);
+
 
 #endif /* TRIEBCD_H */
