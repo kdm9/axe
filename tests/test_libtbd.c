@@ -30,7 +30,7 @@ test_combinations (void *ptr)
     int ret = 0;
     int count = 0;
 
-    while ((ret = combinations(len, elem, choices)) == 1) {
+    while ((ret = combinations(len, elem, choices, !ret)) == 1) {
         size_t iii = 0;
 
         for (iii = 0; iii < elem; iii++) {
