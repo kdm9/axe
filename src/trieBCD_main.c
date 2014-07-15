@@ -18,8 +18,10 @@
 
 
 #include "trieBCD.h"
+#include <time.h>
 
 #include <getopt.h>
+static char _time_now[10] = "";
 
 static void
 print_version(void)
@@ -182,7 +184,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
         fprintf(stderr, "ERROR: Barcode file must be provided\n");
         goto error;
     }
-    if (config->mismatches > 4) {
+    if (config->mismatches > 4 || config->mismatches < 0) {
         fprintf(stderr, "ERROR: Silly mismatch level %zu\n",
                 config->mismatches);
         goto error;
@@ -347,6 +349,16 @@ error:
     return 1;
 }
 
+char *
+now(void)
+{
+    time_t rawtime;
+
+    time(&rawtime);
+    strftime(_time_now, 10, "%H:%M:%S", localtime(&rawtime));
+    return _time_now;
+}
+
 int
 main (int argc, char * const *argv)
 {
@@ -358,6 +370,8 @@ main (int argc, char * const *argv)
         goto end;
     }
     ret = parse_args(config, argc, argv);
+    fprintf(stderr, "[main] Starting demultiplexing at %s\n", now());
+    TBD_DEBUG_LOG("[main] CLI args parsed\n");
     if (ret != 0) {
         print_usage();
         if (ret == 2) {
@@ -366,10 +380,37 @@ main (int argc, char * const *argv)
         goto end;
     }
     ret = tbd_read_barcodes(config);
-    if (ret != 0) goto end;
-    ret = tbd_load_tries_and_make_ouputs(config);
-    if (ret != 0) goto end;
+    TBD_DEBUG_LOG("[main] tbd_read_barcodes done\n");
+    if (ret != 0) {
+        fprintf(stderr, "[main] ERROR: tbd_read_barcodes returned %i\n", ret);
+        goto end;
+    }
+    ret = tbd_make_tries(config);
+    TBD_DEBUG_LOG("[main] tbd_make_tries done\n");
+    if (ret != 0) {
+        fprintf(stderr, "[main] ERROR: tbd_make_tries returned %i\n", ret);
+        goto end;
+    }
+    ret = tbd_load_tries(config);
+    TBD_DEBUG_LOG("[main] tbd_load_tries done\n");
+    if (ret != 0) {
+        fprintf(stderr, "[main] ERROR: tbd_load_tries returned %i\n", ret);
+        goto end;
+    }
+    ret = tbd_make_outputs(config);
+    TBD_DEBUG_LOG("[main] tbd_make_outputs done\n");
+    if (ret != 0) {
+        fprintf(stderr, "[main] ERROR: tbd_make_outputs returned %i\n", ret);
+        goto end;
+    }
+    ret = tbd_process_file(config);
+    TBD_DEBUG_LOG("[main] tbd_process_file done\n");
+    if (ret != 0) {
+        fprintf(stderr, "[main] ERROR: tbd_process_file returned %i\n", ret);
+        goto end;
+    }
 end:
     tbd_config_destroy(config);
+    fprintf(stderr, "[main] Finishing demultiplexing at %s\n", now());
     return ret;
 }
