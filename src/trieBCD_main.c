@@ -369,6 +369,7 @@ now(void)
     strftime(_time_now, 10, "%H:%M:%S", localtime(&rawtime));
     return _time_now;
 }
+
 int
 main (int argc, char * const *argv)
 {
