@@ -184,7 +184,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
         fprintf(stderr, "ERROR: Barcode file must be provided\n");
         goto error;
     }
-    if (config->mismatches > 4 || config->mismatches < 0) {
+    if (config->mismatches > 4) {
         fprintf(stderr, "ERROR: Silly mismatch level %zu\n",
                 config->mismatches);
         goto error;
@@ -204,6 +204,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
             case READS_INTERLEAVED:
                 fprintf(stderr, "ERROR: Setting interleaved input file failed.\n");
                 break;
+            case READS_UNKNOWN:
             default:
                 break;
         }
@@ -222,6 +223,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
                 fprintf(stderr, "ERROR: Setting interleaved input file failed.\n");
                 goto error;
                 break;
+            case READS_UNKNOWN:
             default:
                 goto error;
                 break;
@@ -236,6 +238,8 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
                 fprintf(stderr, "ERROR: Revese read input file set in interleaved mode.\n");
                 goto error;
                 break;
+            case READS_SINGLE:
+            case READS_UNKNOWN:
             default:
                 /* Misc weirdness */
                 goto error;
@@ -253,6 +257,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
             case READS_INTERLEAVED:
                 fprintf(stderr, "ERROR: Setting interleaved output prefix failed.\n");
                 break;
+            case READS_UNKNOWN:
             default:
                 break;
         }
@@ -271,6 +276,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
                 fprintf(stderr, "ERROR: Setting interleaved output prefix failed.\n");
                 goto error;
                 break;
+            case READS_UNKNOWN:
             default:
                 goto error;
                 break;
@@ -285,6 +291,8 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
                 fprintf(stderr, "ERROR: Revese read output prefix set in interleaved mode.\n");
                 goto error;
                 break;
+            case READS_SINGLE:
+            case READS_UNKNOWN:
             default:
                 /* Misc weirdness */
                 goto error;
@@ -300,6 +308,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
             case READS_INTERLEAVED:
                 fprintf(stderr, "ERROR: Interleaved paired read unknown barcode output file must be provided.\n");
                 break;
+            case READS_UNKNOWN:
             default:
                 break;
         }
@@ -314,6 +323,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
             case READS_SINGLE:
             case READS_INTERLEAVED:
                 break;
+            case READS_UNKNOWN:
             default:
                 goto error;
                 break;
@@ -329,6 +339,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
                 fprintf(stderr, " be provided with interleaved/single end output.\n");
                 goto error;
                 break;
+            case READS_UNKNOWN:
             default:
                 goto error;
                 break;
@@ -349,7 +360,7 @@ error:
     return 1;
 }
 
-char *
+static const char *
 now(void)
 {
     time_t rawtime;
@@ -358,7 +369,6 @@ now(void)
     strftime(_time_now, 10, "%H:%M:%S", localtime(&rawtime));
     return _time_now;
 }
-
 int
 main (int argc, char * const *argv)
 {

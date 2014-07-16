@@ -301,8 +301,8 @@ tbd_make_tries(struct tbd_config *config)
     if (!tbd_config_ok(config)) {
         return -1;
     }
-    /* Create and alloc tries */
-    config->fwd_tries = km_malloc(config->mismatches *
+    /* We need 1 trie for 0 mm, so add 1 to cfg->mm */
+    config->fwd_tries = km_malloc((config->mismatches + 1) *
                                   sizeof(*config->fwd_tries));
     for (iii = 0; iii <= config->mismatches; iii++) {
         config->fwd_tries[iii] = tbd_trie_create();
@@ -467,7 +467,7 @@ load_tries_single(struct tbd_config *config)
     size_t num_mutated = 0;
     int ret = 0;
     size_t iii = 0;
-    int jjj = 0;
+    size_t jjj = 0;
     size_t mmm = 0;
     int tmp = 0;
     struct tbd_barcode *this_bcd = NULL;
@@ -622,6 +622,8 @@ process_file_single(struct tbd_config *config)
         case READS_INTERLEAVED:
             goto interleaved;
             break;
+        case READS_PAIRED:
+        case READS_UNKNOWN:
         default:
             fprintf(stderr, "[process_file_single] Bad infile mode %i\n",
                     config->in_mode);
@@ -632,7 +634,7 @@ single:
     SEQFILE_ITER_SINGLE_BEGIN(insf, seq, seqlen)
         ret = 1;
         for (iii = 0; iii <= config->mismatches; iii++) {
-            ret = tbd_match_read(&bcd1, config->fwd_tries[0], seq);
+            ret = tbd_match_read(&bcd1, config->fwd_tries[iii], seq);
             if (ret == 0) {
                 break;
             }
@@ -663,6 +665,10 @@ single:
                     "[process_file] Error: writing to outfile %s failed\n%s\n",
                     outsf1->fwd_file->zf->path, zferror(outsf1->fwd_file->zf));
             have_error = 1;
+            seq->seq.s -= bcd1_len;
+            seq->seq.l += bcd1_len;
+            seq->qual.s -= bcd1_len;
+            seq->qual.l += bcd1_len;
             break;
         }
         seq->seq.s -= bcd1_len;
@@ -702,7 +708,7 @@ tbd_process_file(struct tbd_config *config)
 }
 
 int
-combinations(uint64_t len, uint64_t elem, uintptr_t *choices, int at_start)
+combinations(int64_t len, int64_t elem, uintptr_t *choices, int at_start)
 {
     ssize_t iii = 0;
     if (len < elem || choices == NULL) {
@@ -720,7 +726,7 @@ combinations(uint64_t len, uint64_t elem, uintptr_t *choices, int at_start)
         return 1;
     }
     /* Can we increment the final element? */
-    if (choices[elem - 1] < len - 1) {
+    if (choices[elem - 1] < (uintptr_t)(len - 1)) {
         choices[elem - 1]++;
         return 1;
     } else {
@@ -749,7 +755,7 @@ combinations(uint64_t len, uint64_t elem, uintptr_t *choices, int at_start)
 }
 
 int
-product(uint64_t len, uint64_t elem, uintptr_t *choices, int at_start)
+product(int64_t len, int64_t elem, uintptr_t *choices, int at_start)
 {
     ssize_t iii = 0;
     if (len < elem || choices == NULL) {
@@ -763,7 +769,7 @@ product(uint64_t len, uint64_t elem, uintptr_t *choices, int at_start)
     }
     iii = elem - 1;
     while (iii >= 0) {
-        if (choices[iii] <  len - 1) {
+        if (choices[iii] <  (uintptr_t)(len - 1)) {
             /* Woo, we've found something to increment. */
             ssize_t jjj;
             /* Increment this choice */
@@ -784,7 +790,7 @@ product(uint64_t len, uint64_t elem, uintptr_t *choices, int at_start)
 
 char **
 hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
-                   int dist, int keep_original)
+                   unsigned int dist, int keep_original)
 {
     const char alphabet[] = "ACGT";
     const size_t n_letters = 4;

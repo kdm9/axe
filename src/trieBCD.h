@@ -227,14 +227,15 @@ int tbd_load_tries(struct tbd_config *config);
 int tbd_make_outputs(struct tbd_config *config);
 int tbd_trie_add(struct tbd_trie *trie, const char *seq, size_t len);
 int tbd_process_file(struct tbd_config *config);
+int tbd_print_summary(const struct tbd_config *config, FILE *stream,
+                      int verbosity);
 
 extern int tbd_match_read(intptr_t *value, struct tbd_trie *trie,
                           const seq_t *seq);
-int product(uint64_t len, uint64_t elem, uintptr_t *choices, int at_start);
-int combinations(uint64_t len, uint64_t elem, uintptr_t *choices,
-                 int at_start);
+int product(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
+int combinations(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
 char **hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
-                          int dist, int keep_original);
+                          unsigned int dist, int keep_original);
 
 
 #endif /* TRIEBCD_H */
