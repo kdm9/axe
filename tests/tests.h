@@ -43,6 +43,5 @@
 
 
 /* Core tests */
-void test_combinations (void *ptr);
 extern struct testcase_t core_tests[];
 #endif /* ifndef TBD_TESTS_H */

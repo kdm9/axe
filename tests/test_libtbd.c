@@ -18,10 +18,9 @@
 
 #include "tests.h"
 
-void
+static void
 test_combinations (void *ptr)
 {
-
     const uint64_t len = 4;
     const uint64_t elem = 2;
     uintptr_t choices[] = {0,0};
@@ -29,10 +28,10 @@ test_combinations (void *ptr)
     uintptr_t truth[][2] = { {0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}, };
     int ret = 0;
     int count = 0;
+    size_t iii = 0;
 
+    (void)ptr;
     while ((ret = combinations(len, elem, choices, !ret)) == 1) {
-        size_t iii = 0;
-
         for (iii = 0; iii < elem; iii++) {
             tt_int_op(choices[iii], ==, truth[count][iii]);
         }
@@ -45,10 +44,9 @@ end:
 }
 
 
-void
+static void
 test_product (void *ptr)
 {
-
     const uint64_t len = 4;
     const uint64_t elem = 2;
     uintptr_t choices[] = {0,0};
@@ -60,9 +58,10 @@ test_product (void *ptr)
         {3, 0}, {3, 1}, {3, 2}, {3, 3}, };
     int ret = 0;
     int count = 0;
+    size_t iii = 0;
 
+    (void)ptr;
     while ((ret = product(len, elem, choices, !ret)) == 1) {
-        size_t iii = 0;
 
         for (iii = 0; iii < elem; iii++) {
             tt_int_op(choices[iii], ==, truth[count][iii]);
@@ -75,7 +74,7 @@ end:
     ;
 }
 
-void
+static void
 test_hamming_mutate (void *ptr)
 {
     char **mutated = NULL;
@@ -95,6 +94,7 @@ test_hamming_mutate (void *ptr)
         "AAAC", "AAAG", "AAAT", "AACA", "AACC", "AACG", "AACT", "AAGA", "AAGC",
         "AAGG", "AAGT", "AATA", "AATC", "AATG", "AATT", };
 
+    (void) ptr;
     mutated  = hamming_mutate_dna(&count, str, strlen(str), 2, 1);
     tt_ptr_op(mutated, !=, NULL);
     tt_int_op(count, ==, 96);
