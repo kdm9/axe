@@ -100,13 +100,13 @@ file_write_int8 (FILE *file, int8 val)
 Bool
 file_read_chars (FILE *file, char *buff, int len)
 {
-    return (fread (buff, sizeof (char), len, file) == len);
+    return ((int)(fread (buff, sizeof (char), len, file)) == len);
 }
 
 Bool
 file_write_chars (FILE *file, const char *buff, int len)
 {
-    return (fwrite (buff, sizeof (char), len, file) == len);
+    return ((int)(fwrite (buff, sizeof (char), len, file)) == len);
 }
 
 /*

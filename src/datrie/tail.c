@@ -92,7 +92,7 @@ struct _Tail {
  * Create a new empty tail object.
  */
 Tail *
-tail_new ()
+tail_new (void)
 {
     Tail       *t;
 
@@ -139,7 +139,7 @@ tail_fread (FILE *file)
     {
         goto exit_tail_created;
     }
-    if (t->num_tails > SIZE_MAX / sizeof (TailBlock))
+    if (t->num_tails > (int32)( SIZE_MAX / sizeof (TailBlock)))
         goto exit_tail_created;
     t->tails = (TailBlock *) malloc (t->num_tails * sizeof (TailBlock));
     if (!t->tails)

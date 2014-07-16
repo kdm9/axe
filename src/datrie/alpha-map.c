@@ -122,7 +122,7 @@ static int  alpha_map_get_total_ranges (const AlphaMap *alpha_map);
  *  The created object must be freed with alpha_map_free().
  */
 AlphaMap *
-alpha_map_new ()
+alpha_map_new (void)
 {
     AlphaMap   *alpha_map;
 

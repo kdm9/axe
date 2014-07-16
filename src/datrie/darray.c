@@ -85,7 +85,7 @@ static void         da_free_cell       (DArray         *d,
  *------------------------------------*/
 
 Symbols *
-symbols_new ()
+symbols_new (void)
 {
     Symbols *syms;
 
@@ -178,7 +178,7 @@ struct _DArray {
  * Create a new empty doubla-array object.
  */
 DArray *
-da_new ()
+da_new (void)
 {
     DArray     *d;
 
@@ -233,7 +233,7 @@ da_fread (FILE *file)
     /* read number of cells */
     if (!file_read_int32 (file, &d->num_cells))
         goto exit_da_created;
-    if (d->num_cells > SIZE_MAX / sizeof (DACell))
+    if ( d->num_cells > (int32)(SIZE_MAX / sizeof (DACell)))
         goto exit_da_created;
     d->cells = (DACell *) malloc (d->num_cells * sizeof (DACell));
     if (!d->cells)
@@ -314,6 +314,7 @@ da_fwrite (const DArray *d, FILE *file)
 TrieIndex
 da_get_root (const DArray *d)
 {
+    (void) d;
     /* can be calculated value for multi-index trie */
     return 2;
 }

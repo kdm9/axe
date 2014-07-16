@@ -40,7 +40,7 @@
  */
 typedef struct _Symbols Symbols;
 
-Symbols *    symbols_new ();
+Symbols *    symbols_new (void);
 void         symbols_free (Symbols *syms);
 void         symbols_add (Symbols *syms, TrieChar c);
 int          symbols_num (const Symbols *syms);
@@ -52,7 +52,7 @@ TrieChar     symbols_get (const Symbols *syms, int index);
 typedef struct _DArray  DArray;
 
 
-DArray * da_new ();
+DArray * da_new (void);
 
 DArray * da_fread (FILE *file);
 
