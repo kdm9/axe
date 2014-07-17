@@ -1,7 +1,24 @@
-trieBCD
-=======
+AXE
+===
 
-Demultiplex NGS reads using fast data structures.
+> Demultiplex NGS reads using fast data structures. It's fast, and made of tries!
+
+As a virtue of it's algorithms and data structures, it automatically, and very
+quickly, selects the longest optimal barcode present in a sequence read, even
+in the presence of mutation.
+
+**Warning**: Axe has not even been fully implemented yet, let alone
+comprehensively tested. However, in the spirit of "release early and often",
+here it is.
+
+Implementation Progress:
+------------------------
+
+ - [x] Single ended read trimming
+ - [ ] Interleaved/Paired input and output, but R1 only barcoding.
+ - [ ] Combinatorial barcoding.
+ - [ ] Comprehensive `libaxe` tests.
+ - [ ] Comprehensive CLI tests.
 
 Installation:
 -------------
