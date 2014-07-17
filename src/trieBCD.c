@@ -647,6 +647,7 @@ single:
         /* Found a match */
         outsf1 = config->outputs[bcd1][0];
         bcd1_len = config->barcodes[bcd1]->len1;
+        config->barcodes[bcd1]->count++;
 
         if (seq->seq.l <= bcd1_len) {
             /* Don't write out seqs shorter than the barcode */
@@ -930,4 +931,48 @@ tbd_match_read (intptr_t *value, struct tbd_trie *trie, const seq_t *seq)
         return 0;
     }
     return 1;
+}
+
+int
+tbd_write_table(const struct tbd_config *config)
+{
+    FILE *tab_fp = NULL;
+    struct tbd_barcode *this_bcd = NULL;
+    size_t iii = 0;
+    int res = 0;
+
+    if (!tbd_config_ok(config)) {
+        return -1;
+    }
+    if (config->table_file == NULL) {
+        return 0;
+    }
+    tab_fp = fopen(config->table_file, "w");
+    if (tab_fp == NULL) {
+        fprintf(stderr, "[write_table] ERROR: Could not open %s\n%s\n",
+                config->table_file, strerror(errno));
+        return 1;
+    }
+    if (config->match_combo) {
+        fprintf(tab_fp, "R1Barcode\tR2Barcode\tSample\tCount\n");
+    } else {
+        fprintf(tab_fp, "Barcode\tSample\tCount\n");
+    }
+    for (iii = 0; iii < config->n_barcode_pairs; iii++) {
+        this_bcd = config->barcodes[iii];
+        if (config->match_combo) {
+            fprintf(tab_fp, "%s\t%s\t%s\t%" PRIu64 "\n", this_bcd->seq1, this_bcd->seq2,
+                    this_bcd->id, this_bcd->count);
+        } else {
+            fprintf(tab_fp, "%s\t%s\t%" PRIu64 "\n", this_bcd->seq1,
+                    this_bcd->id, this_bcd->count);
+        }
+    }
+    res = fclose(tab_fp);
+    if (res != 0) {
+        fprintf(stderr, "[write_table] ERROR: Could not close FILE * %p\n%s\n",
+                tab_fp, strerror(errno));
+        return 1;
+    }
+    return 0;
 }

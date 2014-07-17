@@ -359,7 +359,6 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
                 break;
         }
     }
-
     config->have_cli_opts = 1;
     return 0;
 version:
@@ -432,6 +431,18 @@ main (int argc, char * const *argv)
     TBD_DEBUG_LOG("[main] tbd_process_file done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: tbd_process_file returned %i\n", ret);
+        goto end;
+    }
+    ret = tbd_print_summary(config, stderr);
+    TBD_DEBUG_LOG("[main] tbd_print_summary done\n");
+    if (ret != 0) {
+        fprintf(stderr, "[main] ERROR: tbd_print_summary returned %i\n", ret);
+        goto end;
+    }
+    ret = tbd_write_table(config);
+    TBD_DEBUG_LOG("[main] tbd_write_table done\n");
+    if (ret != 0) {
+        fprintf(stderr, "[main] ERROR: tbd_write_table returned %i\n", ret);
         goto end;
     }
 end:

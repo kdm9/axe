@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include <kmutil.h>
 #include <kmseq.h>
@@ -223,15 +224,18 @@ void tbd_barcode_destroy_(struct tbd_barcode *barcode);
 
 
 
+/* This is the processing pipeline. These functions should be run in this
+   order */
 int tbd_read_barcodes(struct tbd_config *config);
 int tbd_make_tries(struct tbd_config *config);
 int tbd_load_tries(struct tbd_config *config);
 int tbd_make_outputs(struct tbd_config *config);
-int tbd_trie_add(struct tbd_trie *trie, const char *seq, size_t len);
 int tbd_process_file(struct tbd_config *config);
-int tbd_print_summary(const struct tbd_config *config, FILE *stream,
-                      int verbosity);
+int tbd_write_table(const struct tbd_config *config);
+int tbd_print_summary(const struct tbd_config *config, FILE *stream);
 
+/* Libraries or inner functions */
+int tbd_trie_add(struct tbd_trie *trie, const char *seq, size_t len);
 extern int tbd_match_read(intptr_t *value, struct tbd_trie *trie,
                           const seq_t *seq);
 int product(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
