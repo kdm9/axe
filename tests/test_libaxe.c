@@ -1,7 +1,7 @@
 /*
  * ============================================================================
  *
- *       Filename:  test_libtbd.c
+ *       Filename:  test_libaxe.c
  *
  *    Description:  Tests of core functionality
  *

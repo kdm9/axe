@@ -1,9 +1,9 @@
 /*
  * ============================================================================
  *
- *       Filename:  trieBCD_main.c
+ *       Filename:  axe_main.c
  *
- *    Description:  Main loop for trieBCD
+ *    Description:  Main loop for axe
  *
  *        Version:  1.0
  *        Created:  11/06/14 13:37:00
@@ -17,7 +17,7 @@
  */
 
 
-#include "trieBCD.h"
+#include "axe.h"
 #include <time.h>
 
 #include <getopt.h>
@@ -26,7 +26,7 @@ static char _time_now[10] = "";
 static void
 print_version(void)
 {
-    fprintf(stderr, "trieBCD Version %s\n", TRIEBCD_VERSION);
+    fprintf(stderr, "axe Version %s\n", AXE_VERSION);
     exit(0);
 }
 
@@ -66,9 +66,9 @@ print_usage(void)
 {
     fprintf(stderr, "Demultiplex 5' barcoded reads quickly and accurately.\n\n");
     fprintf(stderr, "USAGE:\n");
-    fprintf(stderr, "trieBCD [-mzc2] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)\n");
-    fprintf(stderr, "trieBCD -h\n");
-    fprintf(stderr, "trieBCD -v\n\n");
+    fprintf(stderr, "axe [-mzc2] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)\n");
+    fprintf(stderr, "axe -h\n");
+    fprintf(stderr, "axe -v\n\n");
     fprintf(stderr, "OPTIONS:\n");
     fprintf(stderr, "    -m, --mismatch\tMaximum hamming distance mismatch. [int, default 1]\n");
     fprintf(stderr, "    -z, --ziplevel\tGzip compression level, or 0 for plain text [int, default 0]\n");
@@ -90,8 +90,8 @@ print_usage(void)
     fprintf(stderr, "\n");
 }
 
-static const char *tbd_opts = "m:z:c2b:f:F:r:R:i:I:t:u:U:hVvq";
-static const struct option tbd_longopts[] = {
+static const char *axe_opts = "m:z:c2b:f:F:r:R:i:I:t:u:U:hVvq";
+static const struct option axe_longopts[] = {
     { "mismatch",   optional_argument,  NULL,   'm' },
     { "ziplevel",   required_argument,  NULL,   'z' },
     { "combinatorial", no_argument,     NULL,   'c' },
@@ -111,12 +111,12 @@ static const struct option tbd_longopts[] = {
 };
 
 static int
-parse_args(struct tbd_config *config, int argc, char * const *argv)
+parse_args(struct axe_config *config, int argc, char * const *argv)
 {
     int c = 0;
     int optind = 0;
 
-    if (!tbd_config_ok(config) || argc < 1 || argv == NULL) {
+    if (!axe_config_ok(config) || argc < 1 || argv == NULL) {
         goto error;
     }
     /* Set some sane defaults */
@@ -125,7 +125,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
     config->mismatches = 1;
     config->verbosity = 0;
     /* Parse argv using getopt */
-    while ((c = getopt_long(argc, argv, tbd_opts, tbd_longopts, &optind)) > 0){
+    while ((c = getopt_long(argc, argv, axe_opts, axe_longopts, &optind)) > 0){
         switch (c) {
             case 'm':
                 config->mismatches = atol(optarg);
@@ -362,7 +362,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
     config->have_cli_opts = 1;
     return 0;
 version:
-    tbd_config_destroy(config);
+    axe_config_destroy(config);
     print_version();
     return 0;
 help:
@@ -387,7 +387,7 @@ int
 main (int argc, char * const *argv)
 {
     int ret = 0;
-    struct tbd_config *config = tbd_config_create();
+    struct axe_config *config = axe_config_create();
 
     if (config == NULL) {
         ret = EXIT_FAILURE;
@@ -403,50 +403,50 @@ main (int argc, char * const *argv)
         }
         goto end;
     }
-    ret = tbd_read_barcodes(config);
-    TBD_DEBUG_LOG("[main] tbd_read_barcodes done\n");
+    ret = axe_read_barcodes(config);
+    TBD_DEBUG_LOG("[main] axe_read_barcodes done\n");
     if (ret != 0) {
-        fprintf(stderr, "[main] ERROR: tbd_read_barcodes returned %i\n", ret);
+        fprintf(stderr, "[main] ERROR: axe_read_barcodes returned %i\n", ret);
         goto end;
     }
-    ret = tbd_make_tries(config);
-    TBD_DEBUG_LOG("[main] tbd_make_tries done\n");
+    ret = axe_make_tries(config);
+    TBD_DEBUG_LOG("[main] axe_make_tries done\n");
     if (ret != 0) {
-        fprintf(stderr, "[main] ERROR: tbd_make_tries returned %i\n", ret);
+        fprintf(stderr, "[main] ERROR: axe_make_tries returned %i\n", ret);
         goto end;
     }
-    ret = tbd_load_tries(config);
-    TBD_DEBUG_LOG("[main] tbd_load_tries done\n");
+    ret = axe_load_tries(config);
+    TBD_DEBUG_LOG("[main] axe_load_tries done\n");
     if (ret != 0) {
-        fprintf(stderr, "[main] ERROR: tbd_load_tries returned %i\n", ret);
+        fprintf(stderr, "[main] ERROR: axe_load_tries returned %i\n", ret);
         goto end;
     }
-    ret = tbd_make_outputs(config);
-    TBD_DEBUG_LOG("[main] tbd_make_outputs done\n");
+    ret = axe_make_outputs(config);
+    TBD_DEBUG_LOG("[main] axe_make_outputs done\n");
     if (ret != 0) {
-        fprintf(stderr, "[main] ERROR: tbd_make_outputs returned %i\n", ret);
+        fprintf(stderr, "[main] ERROR: axe_make_outputs returned %i\n", ret);
         goto end;
     }
-    ret = tbd_process_file(config);
-    TBD_DEBUG_LOG("[main] tbd_process_file done\n");
+    ret = axe_process_file(config);
+    TBD_DEBUG_LOG("[main] axe_process_file done\n");
     if (ret != 0) {
-        fprintf(stderr, "[main] ERROR: tbd_process_file returned %i\n", ret);
+        fprintf(stderr, "[main] ERROR: axe_process_file returned %i\n", ret);
         goto end;
     }
-    ret = tbd_print_summary(config, stderr);
-    TBD_DEBUG_LOG("[main] tbd_print_summary done\n");
+    ret = axe_print_summary(config, stderr);
+    TBD_DEBUG_LOG("[main] axe_print_summary done\n");
     if (ret != 0) {
-        fprintf(stderr, "[main] ERROR: tbd_print_summary returned %i\n", ret);
+        fprintf(stderr, "[main] ERROR: axe_print_summary returned %i\n", ret);
         goto end;
     }
-    ret = tbd_write_table(config);
-    TBD_DEBUG_LOG("[main] tbd_write_table done\n");
+    ret = axe_write_table(config);
+    TBD_DEBUG_LOG("[main] axe_write_table done\n");
     if (ret != 0) {
-        fprintf(stderr, "[main] ERROR: tbd_write_table returned %i\n", ret);
+        fprintf(stderr, "[main] ERROR: axe_write_table returned %i\n", ret);
         goto end;
     }
 end:
-    tbd_config_destroy(config);
+    axe_config_destroy(config);
     fprintf(stderr, "[main] Finishing demultiplexing at %s\n", now());
     return ret;
 }

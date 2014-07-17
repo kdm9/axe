@@ -1,7 +1,7 @@
 #CFLAGS
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/tinytest)
 
-ADD_EXECUTABLE(test_tbd test.c ${CMAKE_CURRENT_SOURCE_DIR}/tinytest/tinytest.c test_libtbd.c)
-TARGET_LINK_LIBRARIES(test_tbd ${ZLIB_LIBRARIES} tbd)
+ADD_EXECUTABLE(test_axe test.c ${CMAKE_CURRENT_SOURCE_DIR}/tinytest/tinytest.c test_libaxe.c)
+TARGET_LINK_LIBRARIES(test_axe ${ZLIB_LIBRARIES} axelib)
 
-ADD_TEST(NAME test COMMAND test_tbd)
+ADD_TEST(NAME test COMMAND test_axe)

@@ -3,7 +3,7 @@
  *
  *       Filename:  tests.h
  *
- *    Description:  All tests for trieBCD, and all common includes.
+ *    Description:  All tests for axe, and all common includes.
  *
  *        Version:  1.0
  *        Created:  20/06/14 17:16:52
@@ -16,8 +16,8 @@
  * ============================================================================
  */
 
-#ifndef TBD_TESTS_H
-#define TBD_TESTS_H
+#ifndef AXE_TESTS_H
+#define AXE_TESTS_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,9 +39,9 @@
 
 #include <kmutil.h>
 
-#include "trieBCD.h"
+#include "axe.h"
 
 
 /* Core tests */
 extern struct testcase_t core_tests[];
-#endif /* ifndef TBD_TESTS_H */
+#endif /* ifndef AXE_TESTS_H */

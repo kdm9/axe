@@ -3,7 +3,7 @@
  *
  *       Filename:  test.c
  *
- *    Description:  Tests for trieBCD
+ *    Description:  Tests for axe
  *
  *        Version:  1.0
  *        Created:  20/06/14 17:14:55
@@ -18,8 +18,8 @@
 #include "tests.h"
 
 
-struct testgroup_t tbd_tests[] = {
-    {"libtrieBCD/", core_tests},
+struct testgroup_t axe_tests[] = {
+    {"libaxe/", core_tests},
     END_OF_GROUPS
 };
 
@@ -53,7 +53,7 @@ main (int argc, const char *argv[])
         free(data_prefix);
         exit(EXIT_FAILURE);
     }
-    res = tinytest_main(argc-1, argv+1, tbd_tests);
+    res = tinytest_main(argc-1, argv+1, axe_tests);
     free(data_prefix);
     return res;
 }
