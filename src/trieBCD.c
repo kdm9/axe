@@ -976,3 +976,22 @@ tbd_write_table(const struct tbd_config *config)
     }
     return 0;
 }
+
+int
+tbd_print_summary(const struct tbd_config *config, FILE *stream)
+{
+#define print(...) fprintf(stream, __VA_ARGS__)
+    if (!tbd_config_ok(config)) {
+        return -1;
+    }
+    if (config->verbosity < 0) {
+        /* Say nothing if we're being quiet */
+        return 0;
+    }
+    if (config->verbosity > 1) {
+        print("Being verbose");
+    }
+
+#undef print
+    return 0;
+}
