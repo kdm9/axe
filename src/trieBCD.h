@@ -70,6 +70,7 @@ struct tbd_barcode {
 
 struct tbd_config {
     char *barcode_file;
+    char *table_file;
     char *infiles[2];
     char *out_prefixes[2];
     char *unknown_files[2];
@@ -86,6 +87,7 @@ struct tbd_config {
     size_t mismatches;
     struct tbd_trie **fwd_tries;
     struct tbd_trie **rev_tries;
+    int verbosity;
     int have_cli_opts           :1; /* Set to 1 once CLI is parsed */
     int match_combo             :1; /* Match using combinatorial strategy */
     int ignore_barcode_confict  :1;

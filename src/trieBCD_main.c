@@ -84,11 +84,13 @@ print_usage(void)
     fprintf(stderr, "    -u, --unknown-r1\tUnknown barcode forward/interleaved read file. [file]\n");
     fprintf(stderr, "    -U, --unknown-r2\tUnknown barcode reverse read file. [file]\n");
     fprintf(stderr, "    -h, --help\t\tPrint this usage plus additional help.\n");
-    fprintf(stderr, "    -v, --version\tPrint version string.\n");
+    fprintf(stderr, "    -V, --version\tPrint version string.\n");
+    fprintf(stderr, "    -v, --verbose\tBe more verbose. Additive, -vv is more vebose than -v.\n");
+    fprintf(stderr, "    -q, --quiet\tBe very quiet.\n");
     fprintf(stderr, "\n");
 }
 
-static const char *tbd_opts = "m:z:c2b:f:F:r:R:i:I:u:U:hV";
+static const char *tbd_opts = "m:z:c2b:f:F:r:R:i:I:t:u:U:hVvq";
 static const struct option tbd_longopts[] = {
     { "mismatch",   optional_argument,  NULL,   'm' },
     { "ziplevel",   required_argument,  NULL,   'z' },
@@ -101,8 +103,10 @@ static const struct option tbd_longopts[] = {
     { "rev-out",    required_argument,  NULL,   'R' },
     { "ilfq-in",    required_argument,  NULL,   'i' },
     { "ilfq-out",   required_argument,  NULL,   'I' },
+    { "table-file", required_argument,  NULL,   't' },
     { "help",       no_argument,        NULL,   'h' },
     { "version",    no_argument,        NULL,   'V' },
+    { "verbose",    no_argument,        NULL,   'v' },
     { NULL,         0,                  NULL,    0  }
 };
 
@@ -119,6 +123,7 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
     /* Most things will default to 0, and we calloc the config struct, so we
      * don't need to explicity set them. */
     config->mismatches = 1;
+    config->verbosity = 0;
     /* Parse argv using getopt */
     while ((c = getopt_long(argc, argv, tbd_opts, tbd_longopts, &optind)) > 0){
         switch (c) {
@@ -169,10 +174,19 @@ parse_args(struct tbd_config *config, int argc, char * const *argv)
             case 'U':
                 config->unknown_files[1] = strdup(optarg);
                 break;
+            case 't':
+                config->table_file = strdup(optarg);
+                break;
             case 'h':
                 goto help;
             case 'V':
                 goto version;
+            case 'v':
+                config->verbosity += 1;
+                break;
+            case 'q':
+                config->verbosity -= 1;
+                break;
             case '?':
             default:
                 /* Getopt long prints its own error msg */
