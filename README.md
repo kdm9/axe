@@ -31,8 +31,8 @@ them out.
 
 In short, on Linux, get the dependencies (see below), and:
 
-    git clone --recursive https://github.com/kdmurray91/trieBCD.git trieBCD
-    cd trieBCD
+    git clone --recursive https://github.com/kdmurray91/axe.git axe
+    cd axe
     mkdir -p build && cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..
     make
@@ -58,8 +58,8 @@ A publication is coming soon, if the reviewer gods decide to smile upon us.
 LICENSE
 -------
 
-The source of trieBCD itself, namely `src/trieBCD*.[ch]` and `tests/*.[ch]`, is
-Copyright 2014 Kevin Murray. All trieBCD source code is licenced under the GNU
+The source of axe itself, namely `src/axe*.[ch]` and `tests/*.[ch]`, is
+Copyright 2014 Kevin Murray. All axe source code is licenced under the GNU
 GPL version 3, a copy of which is included with this source as `LICENCE.txt`
 
 The source of `tinytest`, located in `tests/tinytest`, is Copyright 2009-2012
