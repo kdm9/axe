@@ -18,24 +18,18 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -Werror")
 ## Find Packages and Headers ##
 ###############################
 
-FIND_PACKAGE(ZLIB 1.2.5 REQUIRED)
+FIND_PACKAGE(ZLIB 1.2.7 REQUIRED)
 SET(KMLIB_DEPENDS_LIBS
     ${KMLIB_DEPENDS_LIBS} ${ZLIB_LIBRARIES})
 SET(KMLIB_DEPENDS_INCLUDE_DIRS
     ${KMLIB_DEPENDS_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
 SET(KMLIB_DEPENDS_CFLAGS
     "${KMLIB_DEPENDS_CFLAGS} -DHAVE_ZLIB")
+MESSAGE("ZL ${ZLIB_LIBRARIES}")
 
 ##########################
 ## Set Compiler Options ##
 ##########################
-
-# When STATIC is TRUE, then cmake only looks for static libraries
-IF(LINUX)
-    IF(STATIC)
-        SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-    ENDIF(STATIC)
-ENDIF(LINUX)
 
 IF (CMAKE_COMPILER_IS_GNUCC)
 	SET(AXEWRN "${AXEWRN} -Woverride-init -Wnormalized=id -Wlogical-op")
