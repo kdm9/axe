@@ -70,7 +70,9 @@ GPL version 3, a copy of which is included with this source as `LICENCE.txt`
 
 The source of `tinytest`, located in `tests/tinytest`, is Copyright 2009-2012
 Nick Matthewson; `tinytest` is distributed under the 3-clause BSD license.
+`tinytest` is hosted at [Nick's github page](https://github.com/nmathewson/tinytest).
 
 The source of `libdatrie`, located in `src/datrie`, is Copyright 2006 Theppitak
 Karoonboonyanan, and is licenced under the GNU LGPL version 2.1 per
-`src/datrie/COPYING`.
+`src/datrie/COPYING`. `libdatrie` is hosted at Theppitak Karoonboonyanan's
+website, [here](http://linux.thai.net/~thep/datrie/datrie.html).
