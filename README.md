@@ -17,8 +17,8 @@ Implementation Progress:
 ------------------------
 
  - [x] Single ended read trimming
- - [ ] Interleaved/Paired input and output, but R1 only barcoding.
- - [ ] Combinatorial barcoding.
+ - [x] Interleaved/Paired input and output, but R1 only barcoding.
+ - [x] Combinatorial barcoding.
  - [ ] Comprehensive `libaxe` tests.
  - [ ] Comprehensive CLI tests.
 
