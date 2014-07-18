@@ -168,6 +168,14 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
                 config->out_prefixes[1] = strdup(optarg);
                 config->out_mode = READS_PAIRED;
                 break;
+            case 'i':
+                config->infiles[0] = strdup(optarg);
+                config->in_mode = READS_INTERLEAVED;
+                break;
+            case 'I':
+                config->out_prefixes[0] = strdup(optarg);
+                config->out_mode = READS_INTERLEAVED;
+                break;
             case 'u':
                 config->unknown_files[0] = strdup(optarg);
                 break;

@@ -80,7 +80,7 @@ struct axe_config {
     /* Array of output files. Access by bcd_lookup[1st_bcd_idx][2nd_bcd_idx]
        Values will be 0 <= x < n_barcode_pairs. barcodes or outputs can then
        be indexed w/ this number */
-    size_t **barcode_lookup;
+    ssize_t **barcode_lookup;
     size_t n_barcodes_1; /* Number of first read barcodes */
     size_t n_barcodes_2; /* Number of second read barcodes */
     size_t n_barcode_pairs;

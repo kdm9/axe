@@ -64,8 +64,10 @@ axe_config_destroy_(struct axe_config *config)
     km_free(config->out_prefixes[1]);
     km_free(config->infiles[0]);
     km_free(config->infiles[1]);
-    for (iii = 0; iii < config->n_barcode_pairs; iii ++) {
-        axe_output_destroy(config->outputs[iii]);
+    if (config->outputs != NULL) {
+        for (iii = 0; iii < config->n_barcode_pairs; iii ++) {
+            axe_output_destroy(config->outputs[iii]);
+        }
     }
     km_free(config->outputs);
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
@@ -313,7 +315,8 @@ setup_barcode_lookup_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_barcode = config->barcodes[iii];
         if (!axe_barcode_ok(this_barcode)) {
-            /* TODO error printer */
+            fprintf(stderr, "[load_tries] Bad barcode at %zu\n", iii);
+            return -1;
             goto error;
         }
         if (!trie_retrieve(seq1_trie->trie, this_barcode->seq1, &tmp)) {
@@ -331,6 +334,8 @@ setup_barcode_lookup_combo(struct axe_config *config)
     for (bcd1 = 0; bcd1 < config->n_barcodes_1; bcd1++) {
         config->barcode_lookup[bcd1] = km_calloc(n_barcodes_2,
                                            sizeof(**config->barcode_lookup));
+        memset(config->barcode_lookup[bcd1], -1,
+               n_barcodes_2 * sizeof(**config->barcode_lookup));
     }
     /* Setup barcode lookup */
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
@@ -344,13 +349,14 @@ setup_barcode_lookup_combo(struct axe_config *config)
         if (!res) goto error;
         config->barcode_lookup[bcd1][bcd2] = iii;
     }
-error:
-    ret = 1;
-    goto exit;
+    ret = 0;
 exit:
     axe_trie_destroy(seq1_trie);
     axe_trie_destroy(seq2_trie);
     return ret;
+error:
+    ret = 1;
+    goto exit;
 }
 
 int
@@ -385,7 +391,7 @@ axe_make_tries(struct axe_config *config)
         }
     }
     if (config->match_combo) {
-        config->rev_tries = km_malloc(config->mismatches * \
+        config->rev_tries = km_malloc((config->mismatches + 1) *
                                       sizeof(*config->rev_tries));
         for (iii = 0; iii <= config->mismatches; iii++) {
             config->rev_tries[iii] = axe_trie_create();
@@ -451,7 +457,7 @@ load_tries_combo(struct axe_config *config)
     }
     /* Make mutated barcodes and add to trie */
     for (iii = 0; iii < config->n_barcodes_1; iii++) {
-        pair_idx = config->barcode_lookup[iii][0];
+        pair_idx = config->barcode_lookup[iii][iii];
         this_bcd = config->barcodes[pair_idx];
         if (!axe_barcode_ok(this_bcd)) {
             fprintf(stderr, "[load_tries] Bad R1 barcode at %zu\n", iii);
@@ -487,11 +493,10 @@ load_tries_combo(struct axe_config *config)
     }
     /* Ditto for the reverse read */
     for (iii = 0; iii < config->n_barcodes_2; iii++) {
-        pair_idx = config->barcode_lookup[0][iii];
+        pair_idx = config->barcode_lookup[iii][iii];
         this_bcd = config->barcodes[pair_idx];
         /* Likewise for the reverse read index */
         if (!trie_retrieve(config->rev_tries[0]->trie, this_bcd->seq2, &bcd2)) {
-            bcd2 = config->n_barcodes_2++;
             ret = axe_trie_add(config->rev_tries[0], this_bcd->seq2, iii);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
@@ -500,15 +505,15 @@ load_tries_combo(struct axe_config *config)
             }
         }
         for (jjj = 1; jjj <= config->mismatches; jjj++) {
+            num_mutated = 0;
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq2,
                                          this_bcd->len2, iii, 0);
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
-                if (ret != 0) {
-                    fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)",
+                ret = axe_trie_add(config->rev_tries[jjj], mutated[mmm], iii);
+                if (0) { //ret != 0) {
+                    fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)\n",
                             config->ignore_barcode_confict ? "WARNING": "ERROR",
                             mutated[mmm], (int)jjj);
-                    return 1;
                 }
                 km_free(mutated[mmm]);
             }
@@ -658,6 +663,142 @@ axe_load_tries(struct axe_config *config)
     }
 }
 
+static inline int
+write_barcoded_read_single(struct axe_output *out, seq_t *seq1, seq_t *seq2,
+                           size_t bcd_len)
+{
+    int ret = 0;
+
+    if (seq1->seq.l <= bcd_len) {
+        /* Don't write out seqs shorter than the barcode */
+        return 0;
+    }
+    /* Bit of the ol' switcheroo. We keep the seq's char pointers, so we
+       need to switch them back to their orig. values, but don't want to
+       copy. Kludgy, I know. */
+    seq1->seq.s += bcd_len;
+    seq1->seq.l -= bcd_len;
+    seq1->qual.s += bcd_len;
+    seq1->qual.l -= bcd_len;
+    ret = seqfile_write(out->fwd_file, seq1);
+    if (ret < 1) {
+        fprintf(stderr,
+               "[process_file] Error: writing to fwd file %s failed\n%s\n",
+                out->fwd_file->zf->path,
+                zferror(out->fwd_file->zf));
+        seq1->seq.s -= bcd_len;
+        seq1->seq.l += bcd_len;
+        seq1->qual.s -= bcd_len;
+        seq1->qual.l += bcd_len;
+        return 1;
+    }
+    seq1->seq.s -= bcd_len;
+    seq1->seq.l += bcd_len;
+    seq1->qual.s -= bcd_len;
+    seq1->qual.l += bcd_len;
+    if (seq2 != NULL) {
+        if (out->mode == READS_INTERLEAVED) {
+            ret = seqfile_write(out->fwd_file, seq2);
+            if (ret < 1) {
+                fprintf(stderr,
+                    "[process_file] Error: writing to il file %s failed\n%s\n",
+                        out->fwd_file->zf->path,
+                        zferror(out->fwd_file->zf));
+                return 1;
+            }
+        } else if (out->mode == READS_PAIRED) {
+            ret = seqfile_write(out->rev_file, seq2);
+            if (ret < 1) {
+                fprintf(stderr,
+                   "[process_file] Error: writing to rev file %s failed\n%s\n",
+                        out->rev_file->zf->path,
+                        zferror(out->rev_file->zf));
+                return 1;
+            }
+        }
+    }
+    out->count++;
+    return 0;
+}
+
+static inline int
+write_barcoded_read_combo(struct axe_output *out, seq_t *seq1, seq_t *seq2,
+                          size_t bcd1_len, size_t bcd2_len)
+{
+    int ret = 0;
+
+    if (seq1->seq.l <= bcd1_len) {
+        /* Truncate seqs to N */
+        seq1->seq.s[0] = 'N';
+        seq1->seq.s[1] = '\0';
+        seq1->seq.l = 1;
+        /* Keep first qual 'base' */
+        seq1->qual.s[1] = '\0';
+        seq1->qual.l = 1;
+    }
+    if (seq2->seq.l <= bcd2_len) {
+        /* Truncate seqs to N */
+        seq2->seq.s[0] = 'N';
+        seq2->seq.s[1] = '\0';
+        seq2->seq.l = 1;
+        /* Keep first qual 'base' */
+        seq2->qual.s[1] = '\0';
+        seq2->qual.l = 1;
+    }
+    /* Bit of the ol' switcheroo. We keep the seq's char pointers, so we
+       need to switch them back to their orig. values, but don't want to
+       copy. Kludgy, I know. */
+    seq1->seq.s += bcd1_len;
+    seq1->seq.l -= bcd1_len;
+    seq1->qual.s += bcd1_len;
+    seq1->qual.l -= bcd1_len;
+    ret = seqfile_write(out->fwd_file, seq1);
+    if (ret < 1) {
+        fprintf(stderr,
+               "[process_file] Error: writing to fwd file %s failed\n%s\n",
+                out->fwd_file->zf->path,
+                zferror(out->fwd_file->zf));
+        seq1->seq.s -= bcd1_len;
+        seq1->seq.l += bcd1_len;
+        seq1->qual.s -= bcd1_len;
+        seq1->qual.l += bcd1_len;
+        return 1;
+    }
+    seq1->seq.s -= bcd1_len;
+    seq1->seq.l += bcd1_len;
+    seq1->qual.s -= bcd1_len;
+    seq1->qual.l += bcd1_len;
+    seq2->seq.s += bcd2_len;
+    seq2->seq.l -= bcd2_len;
+    seq2->qual.s += bcd2_len;
+    seq2->qual.l -= bcd2_len;
+    if (out->mode == READS_INTERLEAVED) {
+        ret = seqfile_write(out->fwd_file, seq2);
+        if (ret < 1) {
+            fprintf(stderr,
+                "[process_file] Error: writing to il file %s failed\n%s\n",
+                    out->fwd_file->zf->path,
+                    zferror(out->fwd_file->zf));
+            return 1;
+        }
+    } else if (out->mode == READS_PAIRED) {
+        ret = seqfile_write(out->rev_file, seq2);
+        if (ret < 1) {
+            fprintf(stderr,
+               "[process_file] Error: writing to rev file %s failed\n%s\n",
+                    out->rev_file->zf->path,
+                    zferror(out->rev_file->zf));
+            return 1;
+        }
+    }
+    seq2->seq.s -= bcd2_len;
+    seq2->seq.l += bcd2_len;
+    seq2->qual.s -= bcd2_len;
+    seq2->qual.l += bcd2_len;
+    out->count++;
+    return 0;
+}
+
 static int
 process_file_single(struct axe_config *config)
 {
@@ -720,40 +861,15 @@ single:
             continue;
         }
         /* Found a match */
-        printf("%p [%zu] [0]\n", config->barcode_lookup, bcd1);
         barcode_pair_index = config->barcode_lookup[bcd1][0];
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
         config->barcodes[bcd1]->count++;
-
-        if (seq->seq.l <= bcd1_len) {
-            /* Don't write out seqs shorter than the barcode */
-            continue;
-        }
-        /* Bit of the ol' switcheroo. We keep the seq's char pointers, so we
-           need to switch them back to their orig. values, but don't want to
-           copy. Kludgy, I know. */
-        seq->seq.s += bcd1_len;
-        seq->seq.l -= bcd1_len;
-        seq->qual.s += bcd1_len;
-        seq->qual.l -= bcd1_len;
-        ret = seqfile_write(outfile->fwd_file, seq);
-        if (ret < 1) {
-            fprintf(stderr,
-                    "[process_file] Error: writing to outfile %s failed\n%s\n",
-                    outfile->fwd_file->zf->path, zferror(outfile->fwd_file->zf));
+        ret = write_barcoded_read_single(outfile, seq, NULL, bcd1_len);
+        if (ret != 0) {
             have_error = 1;
-            seq->seq.s -= bcd1_len;
-            seq->seq.l += bcd1_len;
-            seq->qual.s -= bcd1_len;
-            seq->qual.l += bcd1_len;
             break;
         }
-        seq->seq.s -= bcd1_len;
-        seq->seq.l += bcd1_len;
-        seq->qual.s -= bcd1_len;
-        seq->qual.l += bcd1_len;
-        outfile->count++;
     SEQFILE_ITER_SINGLE_END(seq)
     if (!have_error) goto clean_exit;
     else goto error;
@@ -778,42 +894,11 @@ interleaved:
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
         config->barcodes[bcd1]->count++;
-        if (seq1->seq.l <= bcd1_len) {
-            /* Don't write out seqs shorter than the barcode */
-            continue;
-        }
-        /* Bit of the ol' switcheroo. We keep the seq's char pointers, so we
-           need to switch them back to their orig. values, but don't want to
-           copy. Kludgy, I know. */
-        seq1->seq.s += bcd1_len;
-        seq1->seq.l -= bcd1_len;
-        seq1->qual.s += bcd1_len;
-        seq1->qual.l -= bcd1_len;
-        ret = seqfile_write(outfile->fwd_file, seq1);
-        if (ret < 1) {
-            fprintf(stderr,
-                   "[process_file] Error: writing to fwd file %s failed\n%s\n",
-                    outfile->fwd_file->zf->path,
-                    zferror(outfile->fwd_file->zf));
+        ret = write_barcoded_read_single(outfile, seq1, seq2, bcd1_len);
+        if (ret != 0) {
             have_error = 1;
-            seq1->seq.s -= bcd1_len;
-            seq1->seq.l += bcd1_len;
-            seq1->qual.s -= bcd1_len;
-            seq1->qual.l += bcd1_len;
             break;
         }
-        seq1->seq.s -= bcd1_len;
-        seq1->seq.l += bcd1_len;
-        seq1->qual.s -= bcd1_len;
-        seq1->qual.l += bcd1_len;
-        ret = seqfile_write(outfile->fwd_file, seq2);
-        if (ret < 1) {
-            fprintf(stderr,
-                   "[process_file] Error: writing to rev file %s failed\n%s\n",
-                    outfile->rev_file->zf->path,
-                    zferror(outfile->rev_file->zf));
-        }
-        outfile->count++;
     SEQFILE_ITER_INTERLEAVED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
@@ -829,7 +914,6 @@ paired:
         }
         if (ret != 0) {
             /* No match */
-            /* printf("paired, no match\n"); */
             seqfile_write(config->unknown_output->fwd_file, seq1);
             seqfile_write(config->unknown_output->rev_file, seq2);
             continue;
@@ -839,40 +923,10 @@ paired:
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
         config->barcodes[bcd1]->count++;
-        if (seq1->seq.l <= bcd1_len) {
-            /* Don't write out seqs shorter than the barcode */
-            continue;
-        }
-        /* Bit of the ol' switcheroo. We keep the seq's char pointers, so we
-           need to switch them back to their orig. values, but don't want to
-           copy. Kludgy, I know. */
-        seq1->seq.s += bcd1_len;
-        seq1->seq.l -= bcd1_len;
-        seq1->qual.s += bcd1_len;
-        seq1->qual.l -= bcd1_len;
-        ret = seqfile_write(outfile->fwd_file, seq1);
-        if (ret < 1) {
-            fprintf(stderr,
-                   "[process_file] Error: writing to fwd file %s failed\n%s\n",
-                    outfile->fwd_file->zf->path,
-                    zferror(outfile->fwd_file->zf));
+        ret = write_barcoded_read_single(outfile, seq1, seq2, bcd1_len);
+        if (ret != 0) {
             have_error = 1;
-            seq1->seq.s -= bcd1_len;
-            seq1->seq.l += bcd1_len;
-            seq1->qual.s -= bcd1_len;
-            seq1->qual.l += bcd1_len;
             break;
-        }
-        seq1->seq.s -= bcd1_len;
-        seq1->seq.l += bcd1_len;
-        seq1->qual.s -= bcd1_len;
-        seq1->qual.l += bcd1_len;
-        ret = seqfile_write(outfile->rev_file, seq2);
-        if (ret < 1) {
-            fprintf(stderr,
-                   "[process_file] Error: writing to rev file %s failed\n%s\n",
-                    outfile->rev_file->zf->path,
-                    zferror(outfile->rev_file->zf));
         }
         outfile->count++;
     SEQFILE_ITER_PAIRED_END(seq1, seq2)
@@ -889,6 +943,146 @@ error:
     return 1;
 }
 
+static int
+process_file_combo(struct axe_config *config)
+{
+    seqfile_t *fwdsf = NULL;
+    seqfile_t *revsf = NULL;
+    ssize_t barcode_pair_index = 0;
+    struct axe_output *outfile = NULL;
+    intptr_t bcd1 = -1;
+    intptr_t bcd2 = -1;
+    size_t iii = 0;
+    int ret = 0;
+    int r1_ret = 0;
+    int r2_ret = 0;
+    size_t bcd1_len = 0;
+    size_t bcd2_len = 0;
+    int have_error = 0;
+
+    if (!axe_config_ok(config)) {
+        fprintf(stderr, "[process_file] Bad config struct\n");
+        return -1;
+    }
+    fwdsf = seqfile_create(config->infiles[0], "r");
+    if (fwdsf == NULL) {
+        fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
+                config->infiles[0]);
+        goto error;
+    }
+    switch(config->in_mode) {
+        case READS_INTERLEAVED:
+            goto interleaved;
+            break;
+        case READS_PAIRED:
+            revsf = seqfile_create(config->infiles[1], "r");
+            if (revsf == NULL) {
+                fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
+                        config->infiles[1]);
+                goto error;
+            }
+            goto paired;
+            break;
+        case READS_SINGLE:
+        case READS_UNKNOWN:
+        default:
+            fprintf(stderr, "[process_file_combo] Bad infile mode %i\n",
+                    config->in_mode);
+            goto error;
+            break;
+    }
+
+interleaved:
+    SEQFILE_ITER_INTERLEAVED_BEGIN(fwdsf, seq1, seq2, seqlen1, seqlen2)
+        r1_ret = 1;
+        r2_ret = 1;
+        for (iii = 0; iii <= config->mismatches; iii++) {
+            r1_ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
+            if (r1_ret == 0) {
+                break;
+            }
+        }
+        for (iii = 0; iii <= config->mismatches; iii++) {
+            r2_ret = axe_match_read(&bcd2, config->rev_tries[iii], seq2);
+            if (r2_ret == 0) {
+                break;
+            }
+        }
+        if (r1_ret != 0 || r2_ret != 0) {
+            /* No match */
+            seqfile_write(config->unknown_output->fwd_file, seq1);
+            seqfile_write(config->unknown_output->fwd_file, seq2);
+            continue;
+        }
+        /* Found a match */
+        barcode_pair_index = config->barcode_lookup[bcd1][bcd2];
+        outfile = config->outputs[barcode_pair_index];
+        bcd1_len = config->barcodes[barcode_pair_index]->len1;
+        bcd2_len = config->barcodes[barcode_pair_index]->len2;
+        config->barcodes[barcode_pair_index]->count++;
+        ret = write_barcoded_read_combo(outfile, seq1, seq2, bcd1_len,
+                                        bcd2_len);
+        if (ret != 0) {
+            have_error = 1;
+            break;
+        }
+    SEQFILE_ITER_INTERLEAVED_END(seq1, seq2)
+    if (!have_error) goto clean_exit;
+    else goto error;
+
+paired:
+    SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2)
+        ret = 1;
+        for (iii = 0; iii <= config->mismatches; iii++) {
+            r1_ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
+            if (r1_ret == 0) {
+                break;
+            }
+        }
+        for (iii = 0; iii <= config->mismatches; iii++) {
+            r2_ret = axe_match_read(&bcd2, config->rev_tries[iii], seq2);
+            if (r2_ret == 0) {
+                break;
+            }
+        }
+        if (r1_ret != 0 || r2_ret != 0) {
+            /* No match */
+            seqfile_write(config->unknown_output->fwd_file, seq1);
+            seqfile_write(config->unknown_output->rev_file, seq2);
+            continue;
+        }
+        /* Found a match */
+        barcode_pair_index = config->barcode_lookup[bcd1][bcd2];
+        if (barcode_pair_index < 0) {
+            /* No match */
+            seqfile_write(config->unknown_output->fwd_file, seq1);
+            seqfile_write(config->unknown_output->rev_file, seq2);
+            continue;
+        }
+        outfile = config->outputs[barcode_pair_index];
+        bcd1_len = config->barcodes[barcode_pair_index]->len1;
+        config->barcodes[bcd1]->count++;
+        ret = write_barcoded_read_single(outfile, seq1, seq2, bcd1_len);
+        if (ret != 0) {
+            have_error = 1;
+            break;
+        }
+        outfile->count++;
+    SEQFILE_ITER_PAIRED_END(seq1, seq2)
+    if (!have_error) goto clean_exit;
+    else goto error;
+clean_exit:
+    seqfile_destroy(fwdsf);
+    if (revsf != NULL) {
+        seqfile_destroy(fwdsf);
+    }
+    return 0;
+error:
+    seqfile_destroy(fwdsf);
+    return 1;
+}
+
+
 int
 axe_process_file(struct axe_config *config)
 {
@@ -896,8 +1090,7 @@ axe_process_file(struct axe_config *config)
         return -1;
     }
     if (config->match_combo) {
-        fprintf(stderr, "Combo not Implemented\n");
-        return -2;
+        return process_file_combo(config);
     } else {
         return process_file_single(config);
     }
