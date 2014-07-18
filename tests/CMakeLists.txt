@@ -1,4 +1,3 @@
-#CFLAGS
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/tinytest)
 
 ADD_EXECUTABLE(test_axe test.c ${CMAKE_CURRENT_SOURCE_DIR}/tinytest/tinytest.c test_libaxe.c)
