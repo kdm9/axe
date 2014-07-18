@@ -134,10 +134,10 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
                 config->out_compress_level = atoi(optarg);
                 break;
             case 'c':
-                config->match_combo = 1;
+                config->match_combo |= 1;
                 break;
             case '2':
-                config->trim_rev = 1;
+                config->trim_rev |= 1;
                 break;
             case 'b':
                 config->barcode_file = strdup(optarg);
@@ -407,6 +407,13 @@ main (int argc, char * const *argv)
     TBD_DEBUG_LOG("[main] axe_read_barcodes done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: axe_read_barcodes returned %i\n", ret);
+        goto end;
+    }
+    ret = axe_setup_barcode_lookup(config);
+    TBD_DEBUG_LOG("[main] axe_setup_barcode_lookup done\n");
+    if (ret != 0) {
+        fprintf(stderr, "[main] ERROR: axe_setup_barcode_lookup returned %i\n",
+                ret);
         goto end;
     }
     ret = axe_make_tries(config);

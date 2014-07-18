@@ -76,8 +76,11 @@ struct axe_config {
     char *out_prefixes[2];
     char *unknown_files[2];
     struct axe_barcode **barcodes;
-    /* Array of output files. Access by cfg->ofs[1st_bcd_idx][2nd_bcd_idx] */
-    struct axe_output ***outputs;
+    struct axe_output **outputs;
+    /* Array of output files. Access by bcd_lookup[1st_bcd_idx][2nd_bcd_idx]
+       Values will be 0 <= x < n_barcode_pairs. barcodes or outputs can then
+       be indexed w/ this number */
+    size_t **barcode_lookup;
     size_t n_barcodes_1; /* Number of first read barcodes */
     size_t n_barcodes_2; /* Number of second read barcodes */
     size_t n_barcode_pairs;
@@ -227,6 +230,7 @@ void axe_barcode_destroy_(struct axe_barcode *barcode);
 /* This is the processing pipeline. These functions should be run in this
    order */
 int axe_read_barcodes(struct axe_config *config);
+int axe_setup_barcode_lookup(struct axe_config *config);
 int axe_make_tries(struct axe_config *config);
 int axe_load_tries(struct axe_config *config);
 int axe_make_outputs(struct axe_config *config);
