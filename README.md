@@ -7,6 +7,8 @@ As a virtue of it's algorithms and data structures, it automatically, and very
 quickly, selects the longest optimal barcode present in a sequence read, even
 in the presence of mutation.
 
+[![Build Status](https://travis-ci.org/kdmurray91/axe.svg?branch=dev)](https://travis-ci.org/kdmurray91/axe)
+
 **Warning**: Axe has not even been fully implemented yet, let alone
 comprehensively tested. However, in the spirit of "release early and often",
 here it is.
