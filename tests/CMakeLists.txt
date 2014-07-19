@@ -19,7 +19,7 @@ ADD_TEST(NAME "Single_end_mode" COMMAND ${CMAKE_BINARY_DIR}/bin/axe
 	 -u ${CMAKE_BINARY_DIR}/out/pare_se_unbarcoded.fq
 	 -b ${CMAKE_BINARY_DIR}/data/pare.barcodes)
 ADD_TEST(NAME "valgrind_Single_end_mode" COMMAND
-	 valgrind --leak-check=full --show-leak-kinds=all
+	 valgrind --leak-check=full
 	 ${CMAKE_BINARY_DIR}/bin/axe
 	 -f ${CMAKE_BINARY_DIR}/data/pare.fq.gz
 	 -F ${CMAKE_BINARY_DIR}/out/pare_se
