@@ -59,6 +59,7 @@ axe_config_destroy_(struct axe_config *config)
     }
     /* File names */
     km_free(config->barcode_file);
+    km_free(config->table_file);
     km_free(config->unknown_files[0]);
     km_free(config->unknown_files[1]);
     km_free(config->out_prefixes[0]);
