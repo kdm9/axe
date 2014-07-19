@@ -52,29 +52,55 @@ void
 axe_config_destroy_(struct axe_config *config)
 {
     size_t iii = 0;
+    size_t jjj = 0;
 
     if (config == NULL) {
         return;
     }
+    /* File names */
     km_free(config->barcode_file);
-    for (iii = 0; iii < 2; iii++) {
-        km_free(config->infiles[iii]);
-    }
+    km_free(config->unknown_files[0]);
+    km_free(config->unknown_files[1]);
     km_free(config->out_prefixes[0]);
     km_free(config->out_prefixes[1]);
     km_free(config->infiles[0]);
     km_free(config->infiles[1]);
+    /* outputs */
     if (config->outputs != NULL) {
         for (iii = 0; iii < config->n_barcode_pairs; iii ++) {
             axe_output_destroy(config->outputs[iii]);
         }
     }
     km_free(config->outputs);
-    for (iii = 0; iii < config->n_barcode_pairs; iii++) {
-        axe_barcode_destroy(config->barcodes[iii]);
+    axe_output_destroy(config->unknown_output);
+    /* barcode pairs */
+    if (config->barcodes != NULL) {
+        for (iii = 0; iii < config->n_barcode_pairs; iii++) {
+            axe_barcode_destroy(config->barcodes[iii]);
+        }
     }
     km_free(config->barcodes);
-    axe_output_destroy(config->unknown_output);
+    /* barcode lookup */
+    if (config->barcode_lookup != NULL) {
+        for (iii = 0; iii < config->n_barcodes_1; iii++) {
+            km_free(config->barcode_lookup[iii]);
+        }
+    }
+    km_free(config->barcode_lookup);
+    /* Tries */
+    if (config->fwd_tries != NULL) {
+        for (iii = 0; iii <= config->mismatches; iii++) {
+            axe_trie_destroy(config->fwd_tries[iii]);
+        }
+    }
+    km_free(config->fwd_tries);
+    if (config->rev_tries != NULL) {
+        for (iii = 0; iii <= config->mismatches; iii++) {
+            axe_trie_destroy(config->rev_tries[iii]);
+        }
+    }
+    km_free(config->rev_tries);
+    km_free(config);
 }
 
 
@@ -140,6 +166,7 @@ axe_output_destroy_(struct axe_output *output)
         seqfile_destroy(output->rev_file);
         output->mode = READS_UNKNOWN;
         output->count = 0llu;
+        km_free(output);
     }
 }
 
@@ -258,6 +285,7 @@ axe_read_barcodes(struct axe_config *config)
     config->barcodes = barcodes;
     config->n_barcode_pairs = n_barcode_pairs;
     km_free(line);
+    zfclose(zf);
     return 0;
 error:
     if (barcodes != NULL) {
@@ -265,6 +293,7 @@ error:
             axe_barcode_destroy(barcodes[iii]);
         }
     }
+    zfclose(zf);
     km_free(line);
     return 1;
 }
@@ -637,6 +666,8 @@ axe_make_outputs(struct axe_config *config)
                     name_fwd);
             goto error;
         }
+        km_free(name_fwd);
+        km_free(name_rev);
     }
     config->unknown_output = axe_output_create(config->unknown_files[0],
                                                config->unknown_files[1],
@@ -645,6 +676,8 @@ axe_make_outputs(struct axe_config *config)
     km_free(zmode);
     return 0;
 error:
+    km_free(name_fwd);
+    km_free(name_rev);
     km_free(file_ext);
     km_free(zmode);
     return 1;
@@ -1224,6 +1257,8 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
             }
         }
     }
+    km_free(mut_indicies);
+    km_free(alphabet_indicies);
     *n_results_o = results;
     return result;
 }
@@ -1260,6 +1295,7 @@ axe_trie_create(void)
         alpha_map_free(map);
         return NULL;
     }
+    alpha_map_free(map);
     return trie;
 }
 
