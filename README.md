@@ -47,11 +47,11 @@ In short, on Linux, get the dependencies (see below), and:
 To install to a prefix, as you would with `./configure --prefix` with the
 autotools build system, please use the following cmake command:
 
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/path/to/your/prefix
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/path/to/your/prefix ..
 
 e.g.:
 
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/home/kevin
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/home/kevin ..
 
 ###Dependencies:
 
