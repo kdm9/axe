@@ -44,6 +44,15 @@ In short, on Linux, get the dependencies (see below), and:
     make
     sudo make install
 
+To install to a prefix, as you would with `./configure --prefix` with the
+autotools build system, please use the following cmake command:
+
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/path/to/your/prefix
+
+e.g.:
+
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/home/kevin
+
 ###Dependencies:
 
 - zlib version >= 1.2.5. On debian, use the pacakge `zlib1g-dev`.
