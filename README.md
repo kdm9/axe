@@ -45,7 +45,8 @@ In short, on Linux, get the dependencies (see below), and:
     sudo make install
 
 To install to a prefix, as you would with `./configure --prefix` with the
-autotools build system, please use the following cmake command:
+autotools build system, please use the following cmake command in place of the
+one above:
 
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/path/to/your/prefix ..
 
@@ -55,6 +56,8 @@ e.g.:
 
 ###Dependencies:
 
+- cmake. This is installable via `sudo apt-get install cmake` on debian based
+  systems, or `brew install cmake` using homebrew on OS X.
 - zlib version >= 1.2.5. On debian, use the pacakge `zlib1g-dev`.
 - kmlib, tinytest and libdatrie (bundled in source, if you used
   `git clone --recursive` or an installation tarball)
