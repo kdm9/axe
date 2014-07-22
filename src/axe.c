@@ -478,16 +478,14 @@ load_tries_combo(struct axe_config *config)
     size_t jjj = 0;
     size_t mmm = 0;
     struct axe_barcode *this_bcd = NULL;
-    size_t pair_idx = 0;
 
     if (!axe_config_ok(config)) {
         fprintf(stderr, "[load_tries] Bad config\n");
         return -1;
     }
     /* Make mutated barcodes and add to trie */
-    for (iii = 0; iii < config->n_barcodes_1; iii++) {
-        pair_idx = config->barcode_lookup[iii][iii];
-        this_bcd = config->barcodes[pair_idx];
+    for (iii = 0; iii < config->n_barcode_pairs; iii++) {
+        this_bcd = config->barcodes[iii];
         if (!axe_barcode_ok(this_bcd)) {
             fprintf(stderr, "[load_tries] Bad R1 barcode at %zu\n", iii);
             return -1;
@@ -502,6 +500,8 @@ load_tries_combo(struct axe_config *config)
                         this_bcd->seq1, iii);
                 return 1;
             }
+        } else {
+            continue;
         }
         for (jjj = 1; jjj <= config->mismatches; jjj++) {
             /* Do the forwards read barcode */
@@ -521,9 +521,8 @@ load_tries_combo(struct axe_config *config)
         }
     }
     /* Ditto for the reverse read */
-    for (iii = 0; iii < config->n_barcodes_2; iii++) {
-        pair_idx = config->barcode_lookup[iii][iii];
-        this_bcd = config->barcodes[pair_idx];
+    for (iii = 0; iii < config->n_barcode_pairs; iii++) {
+        this_bcd = config->barcodes[iii];
         /* Likewise for the reverse read index */
         if (!trie_retrieve(config->rev_tries[0]->trie, this_bcd->seq2, &bcd2)) {
             ret = axe_trie_add(config->rev_tries[0], this_bcd->seq2, iii);
@@ -532,6 +531,8 @@ load_tries_combo(struct axe_config *config)
                         this_bcd->seq2, iii);
                 return 1;
             }
+        } else {
+            continue;
         }
         for (jjj = 1; jjj <= config->mismatches; jjj++) {
             num_mutated = 0;
