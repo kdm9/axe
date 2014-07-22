@@ -52,7 +52,6 @@ void
 axe_config_destroy_(struct axe_config *config)
 {
     size_t iii = 0;
-    size_t jjj = 0;
 
     if (config == NULL) {
         return;
