@@ -3,9 +3,10 @@ AXE
 
 > Demultiplex NGS reads using fast data structures. It's fast, and made of tries!
 
-As a virtue of it's algorithms and data structures, AXE automatically, and very
-quickly, selects the longest optimal barcode present in a sequence read, even
-in the presence of mutation.
+As a virtue of it's algorithms and data structures, AXE very rapidly selects
+the optimal barcode present in a sequence read, even in the presence of
+sequencing errors. The algorithm is able to handle combinatorial barcoding,
+barcodes of differing length, and several mismatches per barcode.
 
 Early result indicate far improved accuracy and speed over existing
 demultiplexers. Unscientific trials show AXE processes approximately 1 million
