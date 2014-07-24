@@ -699,7 +699,7 @@ axe_load_tries(struct axe_config *config)
 
 static inline int
 write_barcoded_read_single(struct axe_output *out, seq_t *seq1, seq_t *seq2,
-                           size_t bcd_len)
+                           size_t bcd_len, int trim_r2)
 {
     int ret = 0;
 
@@ -717,7 +717,7 @@ write_barcoded_read_single(struct axe_output *out, seq_t *seq1, seq_t *seq2,
     ret = seqfile_write(out->fwd_file, seq1);
     if (ret < 1) {
         fprintf(stderr,
-               "[process_file] Error: writing to fwd file %s failed\n%s\n",
+               "[write_read_single] Error: writing to R1 file %s failed\n%s\n",
                 out->fwd_file->zf->path,
                 zferror(out->fwd_file->zf));
         seq1->seq.s -= bcd_len;
@@ -731,6 +731,12 @@ write_barcoded_read_single(struct axe_output *out, seq_t *seq1, seq_t *seq2,
     seq1->qual.s -= bcd_len;
     seq1->qual.l += bcd_len;
     if (seq2 != NULL) {
+        if (trim_r2) {
+            seq2->seq.s += bcd_len;
+            seq2->seq.l -= bcd_len;
+            seq2->qual.s += bcd_len;
+            seq2->qual.l -= bcd_len;
+        }
         if (out->mode == READS_INTERLEAVED) {
             ret = seqfile_write(out->fwd_file, seq2);
             if (ret < 1) {
@@ -749,6 +755,12 @@ write_barcoded_read_single(struct axe_output *out, seq_t *seq1, seq_t *seq2,
                         zferror(out->rev_file->zf));
                 return 1;
             }
+        }
+        if (trim_r2) {
+            seq2->seq.s -= bcd_len;
+            seq2->seq.l += bcd_len;
+            seq2->qual.s -= bcd_len;
+            seq2->qual.l += bcd_len;
         }
     }
     out->count++;
@@ -899,7 +911,7 @@ single:
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
         config->barcodes[bcd1]->count++;
-        ret = write_barcoded_read_single(outfile, seq, NULL, bcd1_len);
+        ret = write_barcoded_read_single(outfile, seq, NULL, bcd1_len, 0);
         if (ret != 0) {
             have_error = 1;
             break;
@@ -928,7 +940,8 @@ interleaved:
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
         config->barcodes[bcd1]->count++;
-        ret = write_barcoded_read_single(outfile, seq1, seq2, bcd1_len);
+        ret = write_barcoded_read_single(outfile, seq1, seq2, bcd1_len,
+                                         config->trim_rev);
         if (ret != 0) {
             have_error = 1;
             break;
@@ -957,7 +970,8 @@ paired:
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
         config->barcodes[bcd1]->count++;
-        ret = write_barcoded_read_single(outfile, seq1, seq2, bcd1_len);
+        ret = write_barcoded_read_single(outfile, seq1, seq2, bcd1_len,
+                                         config->trim_rev);
         if (ret != 0) {
             have_error = 1;
             break;
@@ -1096,7 +1110,8 @@ paired:
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
         config->barcodes[bcd1]->count++;
-        ret = write_barcoded_read_single(outfile, seq1, seq2, bcd1_len);
+        ret = write_barcoded_read_combo(outfile, seq1, seq2, bcd1_len,
+                                        bcd2_len);
         if (ret != 0) {
             have_error = 1;
             break;
