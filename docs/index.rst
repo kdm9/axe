@@ -6,9 +6,9 @@
 Welcome to axe's documentation!
 ===============================
 
-Axe is a read demultiplexer, useful in situations where sequence reads contain
-the barcodes that uniquly distinguish samples. Axe uses a rapid and accurate
-algorithm based on hamming mismatch tries to compeditively match the prefix of
+Axe is a read de-multiplexer, useful in situations where sequence reads contain
+the barcodes that uniquely distinguish samples. Axe uses a rapid and accurate
+algorithm based on hamming mismatch tries to competitively match the prefix of
 a sequencing read against a set of barcodes. Axe supports combinatorial
 barcoding schemes.
 
@@ -17,6 +17,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   usage
    algorithm
 
 
