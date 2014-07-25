@@ -5,14 +5,14 @@ env:
  - BUILD_TYPE=Release
  - BUILD_TYPE=Debug
  - BUILD_TYPE=Debug
-   # - BUILD_TYPE=Coverage
+ - BUILD_TYPE=Coverage
 
 compiler:
  - clang
  - gcc
 
 install:
-   # - sudo apt-get install lcov python-pip
+ - sudo apt-get install lcov python-pip
  - sudo apt-get install valgrind
  - mkdir zlib && cd zlib
  - wget http://zlib.net/zlib-1.2.8.tar.gz
@@ -22,7 +22,7 @@ install:
  - make
  - sudo make install
  - cd ../..
-   # - sudo pip install cpp-coveralls
+ - sudo pip install cpp-coveralls
  - git submodule update --init
  - mkdir build
  - mkdir target
@@ -35,6 +35,6 @@ script:
  - make install
  - test -f ../target/bin/axe
 
-#after_success:
-# - cd ..
-# - if [ "$BUILD_TYPE" == "Coverage" ] ; then coveralls -e target -e test  -e util -e zlib -E '.*\.h' -e build/CMakeFiles; fi
+after_success:
+ - cd ..
+ - if [ "$BUILD_TYPE" == "Coverage" ] ; then coveralls -e target -e tests -e src/datrie -e src/kmlib -e zlib -E '.*\.h' -e build/CMakeFiles; fi
