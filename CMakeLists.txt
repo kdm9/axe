@@ -57,5 +57,6 @@ SET(CMAKE_C_FLAGS_RELEASE "-O3")
 include_directories(${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/datrie ${CMAKE_SOURCE_DIR}/src/kmlib/src)
 link_directories(${CMAKE_BINARY_DIR}/lib)
 
+add_subdirectory(docs)
 add_subdirectory(tests)
 add_subdirectory(src)
