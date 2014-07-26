@@ -66,8 +66,8 @@ e.g.:
 Usage:
 ------
 
-Full documentation will appear here, or on readthedocs.org, once the CLI has
-been stabilised.
+Full documentation, including a basic description of the algorithm, is hosted
+at https://axe-demultiplexer.readthedocs.org/en/latest/ .
 
 Publication
 -----------
