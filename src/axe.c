@@ -155,7 +155,6 @@ axe_output_create(const char *fwd_fpath, const char *rev_fpath,
     } else {
         out->rev_file = NULL;
     }
-    out->count = 0;
     return out;
 }
 
@@ -166,7 +165,6 @@ axe_output_destroy_(struct axe_output *output)
         seqfile_destroy(output->fwd_file);
         seqfile_destroy(output->rev_file);
         output->mode = READS_UNKNOWN;
-        output->count = 0llu;
         km_free(output);
     }
 }
@@ -287,6 +285,10 @@ axe_read_barcodes(struct axe_config *config)
     config->n_barcode_pairs = n_barcode_pairs;
     km_free(line);
     zfclose(zf);
+    if (config->verbosity > 0) {
+        fprintf(stderr, "[read_barcodes] (%s) Read in barcodes\n",
+                nowstr());
+    }
     return 0;
 error:
     if (barcodes != NULL) {
@@ -345,7 +347,7 @@ setup_barcode_lookup_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_barcode = config->barcodes[iii];
         if (!axe_barcode_ok(this_barcode)) {
-            fprintf(stderr, "[load_tries] Bad barcode at %zu\n", iii);
+            fprintf(stderr, "[setup_lookup] Bad barcode at %zu\n", iii);
             return -1;
             goto error;
         }
@@ -380,6 +382,7 @@ setup_barcode_lookup_combo(struct axe_config *config)
         config->barcode_lookup[bcd1][bcd2] = iii;
     }
     ret = 0;
+
 exit:
     axe_trie_destroy(seq1_trie);
     axe_trie_destroy(seq2_trie);
@@ -688,14 +691,20 @@ error:
 int
 axe_load_tries(struct axe_config *config)
 {
+    int ret = 1;
     if (!axe_config_ok(config)) {
         return -1;
     }
     if (config->match_combo) {
-        return load_tries_combo(config);
+        ret = load_tries_combo(config);
     } else {
-        return load_tries_single(config);
+        ret = load_tries_single(config);
     }
+    if (config->verbosity > 0) {
+        fprintf(stderr, "[load_tries] (%s) Barcode tries loaded\n",
+                nowstr());
+    }
+    return ret;
 }
 
 static inline int
@@ -764,7 +773,6 @@ write_barcoded_read_single(struct axe_output *out, seq_t *seq1, seq_t *seq2,
             seq2->qual.l += bcd_len;
         }
     }
-    out->count++;
     return 0;
 }
 
@@ -842,7 +850,6 @@ write_barcoded_read_combo(struct axe_output *out, seq_t *seq1, seq_t *seq2,
     seq2->seq.l += bcd2_len;
     seq2->qual.s -= bcd2_len;
     seq2->qual.l += bcd2_len;
-    out->count++;
     return 0;
 }
 
@@ -851,9 +858,9 @@ increment_reads_print_progress(struct axe_config *config)
 {
     config->reads_processed++;
     if (config->reads_processed % 100000 == 0) {
-        if (config->verbosity > 0) {
-            fprintf(stderr, "%s: Processed %" PRIu64 " reads\r",
-                    nowstr(), config->reads_processed);
+        if (config->verbosity >= 0) {
+            fprintf(stderr, "%s: Processed %.1fM reads\r",
+                    nowstr(), (float)(config->reads_processed/1000000.0));
         }
     }
 
@@ -914,11 +921,14 @@ single:
                 break;
             }
         }
+        increment_reads_print_progress(config);
         if (ret != 0) {
             /* No match */
             seqfile_write(config->unknown_output->fwd_file, seq);
+            config->reads_failed++;
             continue;
         }
+        config->reads_demultiplexed++;
         /* Found a match */
         barcode_pair_index = config->barcode_lookup[bcd1][0];
         outfile = config->outputs[barcode_pair_index];
@@ -929,7 +939,6 @@ single:
             have_error = 1;
             break;
         }
-        increment_reads_print_progress(config);
     SEQFILE_ITER_SINGLE_END(seq)
     if (!have_error) goto clean_exit;
     else goto error;
@@ -943,13 +952,16 @@ interleaved:
                 break;
             }
         }
+        increment_reads_print_progress(config);
         if (ret != 0) {
             /* No match */
             seqfile_write(config->unknown_output->fwd_file, seq1);
             seqfile_write(config->unknown_output->fwd_file, seq2);
+            config->reads_failed++;
             continue;
         }
         /* Found a match */
+        config->reads_demultiplexed++;
         barcode_pair_index = config->barcode_lookup[bcd1][0];
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
@@ -960,7 +972,6 @@ interleaved:
             have_error = 1;
             break;
         }
-        increment_reads_print_progress(config);
     SEQFILE_ITER_INTERLEAVED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
@@ -974,13 +985,16 @@ paired:
                 break;
             }
         }
+        increment_reads_print_progress(config);
         if (ret != 0) {
             /* No match */
             seqfile_write(config->unknown_output->fwd_file, seq1);
             seqfile_write(config->unknown_output->rev_file, seq2);
+            config->reads_failed++;
             continue;
         }
         /* Found a match */
+        config->reads_demultiplexed++;
         barcode_pair_index = config->barcode_lookup[bcd1][0];
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
@@ -991,20 +1005,17 @@ paired:
             have_error = 1;
             break;
         }
-        outfile->count++;
-        increment_reads_print_progress(config);
     SEQFILE_ITER_PAIRED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
 
 clean_exit:
     seqfile_destroy(fwdsf);
-    if (revsf != NULL) {
-        seqfile_destroy(fwdsf);
-    }
+    seqfile_destroy(revsf);
     return 0;
 error:
     seqfile_destroy(fwdsf);
+    seqfile_destroy(revsf);
     return 1;
 }
 
@@ -1073,14 +1084,24 @@ interleaved:
                 break;
             }
         }
+        increment_reads_print_progress(config);
         if (r1_ret != 0 || r2_ret != 0) {
             /* No match */
             seqfile_write(config->unknown_output->fwd_file, seq1);
             seqfile_write(config->unknown_output->fwd_file, seq2);
+            config->reads_failed++;
             continue;
         }
         /* Found a match */
         barcode_pair_index = config->barcode_lookup[bcd1][bcd2];
+        if (barcode_pair_index < 0) {
+            /* Invalid match */
+            seqfile_write(config->unknown_output->fwd_file, seq1);
+            seqfile_write(config->unknown_output->rev_file, seq2);
+            config->reads_failed++;
+            continue;
+        }
+        config->reads_demultiplexed++;
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
         bcd2_len = config->barcodes[barcode_pair_index]->len2;
@@ -1091,7 +1112,6 @@ interleaved:
             have_error = 1;
             break;
         }
-        increment_reads_print_progress(config);
     SEQFILE_ITER_INTERLEAVED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
@@ -1111,10 +1131,12 @@ paired:
                 break;
             }
         }
+        increment_reads_print_progress(config);
         if (r1_ret != 0 || r2_ret != 0) {
             /* No match */
             seqfile_write(config->unknown_output->fwd_file, seq1);
             seqfile_write(config->unknown_output->rev_file, seq2);
+            config->reads_failed++;
             continue;
         }
         /* Found a match */
@@ -1123,8 +1145,10 @@ paired:
             /* No match */
             seqfile_write(config->unknown_output->fwd_file, seq1);
             seqfile_write(config->unknown_output->rev_file, seq2);
+            config->reads_failed++;
             continue;
         }
+        config->reads_demultiplexed++;
         outfile = config->outputs[barcode_pair_index];
         bcd1_len = config->barcodes[barcode_pair_index]->len1;
         config->barcodes[bcd1]->count++;
@@ -1134,20 +1158,17 @@ paired:
             have_error = 1;
             break;
         }
-        outfile->count++;
-        increment_reads_print_progress(config);
     SEQFILE_ITER_PAIRED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
 
 clean_exit:
     seqfile_destroy(fwdsf);
-    if (revsf != NULL) {
-        seqfile_destroy(fwdsf);
-    }
+    seqfile_destroy(revsf);
     return 0;
 error:
     seqfile_destroy(fwdsf);
+    seqfile_destroy(revsf);
     return 1;
 }
 
@@ -1155,14 +1176,28 @@ error:
 int
 axe_process_file(struct axe_config *config)
 {
+    int ret = 0;
+    clock_t start = 0;
+
     if (!axe_config_ok(config)) {
         return -1;
     }
-    if (config->match_combo) {
-        return process_file_combo(config);
-    } else {
-        return process_file_single(config);
+    start = clock();
+    if (config->verbosity > 0) {
+        fprintf(stderr, "[process_file] (%s) Starting demultiplexing\n",
+                nowstr());
     }
+    if (config->match_combo) {
+        ret = process_file_combo(config);
+    } else {
+        ret = process_file_single(config);
+    }
+    config->time_taken = (float)(clock() - start) / CLOCKS_PER_SEC;
+    if (config->verbosity > 0) {
+        fprintf(stderr, "\r[process_file] (%s) Finished demultiplexing\n",
+                nowstr());
+    }
+    return ret;
 }
 
 int
@@ -1414,6 +1449,8 @@ axe_write_table(const struct axe_config *config)
         return -1;
     }
     if (config->table_file == NULL) {
+        /* we always call this function in the main loop, so we bail out here
+           if we don't have a file to write it to. */
         return 0;
     }
     tab_fp = fopen(config->table_file, "w");
@@ -1437,6 +1474,12 @@ axe_write_table(const struct axe_config *config)
                     this_bcd->id, this_bcd->count);
         }
     }
+    if (config->match_combo) {
+        fprintf(tab_fp, "N\tN\tNo Barcode\t%" PRIu64 "\n",
+                config->reads_failed);
+    } else {
+        fprintf(tab_fp, "N\tNo Barcode\t%" PRIu64 "\n", config->reads_failed);
+    }
     res = fclose(tab_fp);
     if (res != 0) {
         fprintf(stderr, "[write_table] ERROR: Could not close FILE * %p\n%s\n",
@@ -1449,7 +1492,9 @@ axe_write_table(const struct axe_config *config)
 int
 axe_print_summary(const struct axe_config *config, FILE *stream)
 {
-#define print(...) fprintf(stream, __VA_ARGS__)
+    const char *tmp;
+
+#define print(...)  fprintf(stream, __VA_ARGS__)
     if (!axe_config_ok(config)) {
         return -1;
     }
@@ -1457,10 +1502,18 @@ axe_print_summary(const struct axe_config *config, FILE *stream)
         /* Say nothing if we're being quiet */
         return 0;
     }
+    fprintf(stream, "\nRun Summary:\n");
     if (config->verbosity > 1) {
-        print("Being verbose");
+        print("Being verbose (not that you'll notice)\n");
     }
-
+    tmp = config->out_mode == READS_SINGLE ? "reads" : "read pairs";
+    print("Processed %" PRIu64 " %s in %0.1f seconds (%0.3fk %s/sec)\n",
+          config->reads_processed, tmp, config->time_taken,
+          (float)(config->reads_processed / 1000) / config->time_taken, tmp);
+    print("%" PRIu64 " %s contained valid barcodes\n",
+            config->reads_demultiplexed, tmp);
+    print("%" PRIu64 " %s could not be demultiplexed\n",
+            config->reads_failed, tmp);
 #undef print
     return 0;
 }

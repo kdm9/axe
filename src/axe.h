@@ -50,7 +50,6 @@ struct axe_output {
     seqfile_t *fwd_file;
     seqfile_t *rev_file;
     enum read_mode mode;
-    uint64_t count;
 };
 
 struct axe_trie {
@@ -93,6 +92,9 @@ struct axe_config {
     struct axe_trie **fwd_tries;
     struct axe_trie **rev_tries;
     uint64_t reads_processed;
+    uint64_t reads_demultiplexed;
+    uint64_t reads_failed;
+    float time_taken;
     int verbosity;
     int have_cli_opts           :1; /* Set to 1 once CLI is parsed */
     int match_combo             :1; /* Match using combinatorial strategy */

@@ -398,7 +398,6 @@ main (int argc, char * const *argv)
         }
         goto end;
     }
-    fprintf(stderr, "[main] Starting demultiplexing at %s\n", nowstr());
     ret = axe_read_barcodes(config);
     TBD_DEBUG_LOG("[main] axe_read_barcodes done\n");
     if (ret != 0) {
