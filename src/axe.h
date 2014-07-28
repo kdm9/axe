@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <time.h>
 
 #include <kmutil.h>
 #include <kmseq.h>
@@ -91,6 +92,7 @@ struct axe_config {
     size_t mismatches;
     struct axe_trie **fwd_tries;
     struct axe_trie **rev_tries;
+    uint64_t reads_processed;
     int verbosity;
     int have_cli_opts           :1; /* Set to 1 once CLI is parsed */
     int match_combo             :1; /* Match using combinatorial strategy */
@@ -246,6 +248,17 @@ int product(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
 int combinations(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
 char **hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
                           unsigned int dist, int keep_original);
+
+extern char _time_now[];
+static inline const char *
+nowstr(void)
+{
+    time_t rawtime;
+
+    time(&rawtime);
+    strftime(_time_now, 10, "%H:%M:%S", localtime(&rawtime));
+    return _time_now;
+}
 
 
 #endif /* AXE_H */

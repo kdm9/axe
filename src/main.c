@@ -18,10 +18,8 @@
 
 
 #include "axe.h"
-#include <time.h>
 
 #include <getopt.h>
-static char _time_now[10] = "";
 
 static void
 print_version(void)
@@ -381,16 +379,6 @@ error:
     return 1;
 }
 
-static const char *
-now(void)
-{
-    time_t rawtime;
-
-    time(&rawtime);
-    strftime(_time_now, 10, "%H:%M:%S", localtime(&rawtime));
-    return _time_now;
-}
-
 int
 main (int argc, char * const *argv)
 {
@@ -402,7 +390,6 @@ main (int argc, char * const *argv)
         goto end;
     }
     ret = parse_args(config, argc, argv);
-    fprintf(stderr, "[main] Starting demultiplexing at %s\n", now());
     TBD_DEBUG_LOG("[main] CLI args parsed\n");
     if (ret != 0) {
         print_usage();
@@ -411,6 +398,7 @@ main (int argc, char * const *argv)
         }
         goto end;
     }
+    fprintf(stderr, "[main] Starting demultiplexing at %s\n", nowstr());
     ret = axe_read_barcodes(config);
     TBD_DEBUG_LOG("[main] axe_read_barcodes done\n");
     if (ret != 0) {
@@ -462,6 +450,5 @@ main (int argc, char * const *argv)
     }
 end:
     axe_config_destroy(config);
-    fprintf(stderr, "[main] Finishing demultiplexing at %s\n", now());
     return ret;
 }

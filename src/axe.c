@@ -17,6 +17,7 @@
  */
 
 #include "axe.h"
+char _time_now[10] = "";
 
 struct axe_barcode *
 axe_barcode_create(void)
@@ -845,6 +846,18 @@ write_barcoded_read_combo(struct axe_output *out, seq_t *seq1, seq_t *seq2,
     return 0;
 }
 
+static inline void
+increment_reads_print_progress(struct axe_config *config)
+{
+    config->reads_processed++;
+    if (config->reads_processed % 100000 == 0) {
+        if (config->verbosity > 0) {
+            fprintf(stderr, "%s: Processed %" PRIu64 " reads\r",
+                    nowstr(), config->reads_processed);
+        }
+    }
+
+}
 static int
 process_file_single(struct axe_config *config)
 {
@@ -916,6 +929,7 @@ single:
             have_error = 1;
             break;
         }
+        increment_reads_print_progress(config);
     SEQFILE_ITER_SINGLE_END(seq)
     if (!have_error) goto clean_exit;
     else goto error;
@@ -946,6 +960,7 @@ interleaved:
             have_error = 1;
             break;
         }
+        increment_reads_print_progress(config);
     SEQFILE_ITER_INTERLEAVED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
@@ -977,9 +992,11 @@ paired:
             break;
         }
         outfile->count++;
+        increment_reads_print_progress(config);
     SEQFILE_ITER_PAIRED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
+
 clean_exit:
     seqfile_destroy(fwdsf);
     if (revsf != NULL) {
@@ -1074,6 +1091,7 @@ interleaved:
             have_error = 1;
             break;
         }
+        increment_reads_print_progress(config);
     SEQFILE_ITER_INTERLEAVED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
@@ -1117,9 +1135,11 @@ paired:
             break;
         }
         outfile->count++;
+        increment_reads_print_progress(config);
     SEQFILE_ITER_PAIRED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
+
 clean_exit:
     seqfile_destroy(fwdsf);
     if (revsf != NULL) {
