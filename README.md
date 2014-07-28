@@ -3,29 +3,29 @@ AXE
 
 > Demultiplex NGS reads using fast data structures. It's fast, and made of tries!
 
-As a virtue of it's algorithms and data structures, AXE very rapidly selects
-the optimal barcode present in a sequence read, even in the presence of
-sequencing errors. The algorithm is able to handle combinatorial barcoding,
-barcodes of differing length, and several mismatches per barcode.
-
-Early result indicate far improved accuracy and speed over existing
-demultiplexers. Unscientific trials show AXE processes approximately 1 million
-reads per second.
+AXE very rapidly selects the optimal barcode present in a sequence read, even
+in the presence of sequencing errors. The algorithm is able to handle
+combinatorial barcoding, barcodes of differing length, and several mismatches
+per barcode.  Early result indicate far improved accuracy and speed over
+existing demultiplexers. Unscientific trials show AXE processes more than
+500,000 reads per second.
 
 [![Build Status](https://travis-ci.org/kdmurray91/axe.svg?branch=dev)](https://travis-ci.org/kdmurray91/axe)
 
-**Warning**: Axe has not even been fully implemented yet, let alone
-comprehensively tested. However, in the spirit of "release early and often",
-here it is.
+**Warning**: Axe has not yet been comprehensively tested. However, in the
+spirit of "release early and often", here it is.
 
 Implementation Progress:
 ------------------------
 
- - [x] Single ended read trimming
- - [x] Interleaved/Paired input and output, but R1 only barcoding.
- - [x] Combinatorial barcoding.
- - [ ] Comprehensive `libaxe` tests.
- - [ ] Comprehensive CLI tests.
+ - [x] Single ended read demultiplexing
+ - [x] Interleaved/Paired input and output with single-ended demultiplexing
+ - [x] Combinatorial demultiplexing
+ - [x] CLI integration tests
+ - [ ] Comprehensive `libaxe` tests
+ - [ ] Comprehensive CLI tests
+
+See also TODO.md
 
 Installation:
 -------------
