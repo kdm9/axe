@@ -50,6 +50,6 @@ addons:
       name: "kdmurray91/axe"
       description: "The rapid, accurate read demultiplexer"
     notification_email: kevin@kdmurray.id.au
-    build_command_prepend: "cd build; cmake -DCMAKE_BUILD_TYPE=Coverage .."
+    build_command_prepend: "cd build; rm -rf *; cmake -DCMAKE_BUILD_TYPE=Coverage .."
     build_command:   "make"
     branch_pattern: coverity_scan
