@@ -139,11 +139,11 @@ axe_output_create(const char *fwd_fpath, const char *rev_fpath,
     out = km_calloc(1, sizeof(*out));
     out->mode = mode;
     out->fwd_file = seqfile_create(fwd_fpath, fp_mode);
-    seqfile_set_format(out->fwd_file, FASTQ_FMT);
     if (out->fwd_file == NULL) {
         km_free(out);
         return NULL;
     }
+    seqfile_set_format(out->fwd_file, FASTQ_FMT);
     if (rev_fpath != NULL) {
         out->rev_file = seqfile_create(rev_fpath, fp_mode);
         if (out->rev_file == NULL) {
@@ -511,6 +511,7 @@ load_tries_combo(struct axe_config *config)
             /* Do the forwards read barcode */
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq1,
                                          this_bcd->len1, jjj, 0);
+            assert(mutated != NULL);
             for (mmm = 0; mmm < num_mutated; mmm++) {
                 ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
                 if (ret != 0) {
@@ -545,6 +546,7 @@ load_tries_combo(struct axe_config *config)
             num_mutated = 0;
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq2,
                                          this_bcd->len2, iii, 0);
+            assert(mutated != NULL);
             for (mmm = 0; mmm < num_mutated; mmm++) {
                 ret = axe_trie_add(config->rev_tries[jjj], mutated[mmm], iii);
                 if (ret != 0) {
@@ -581,6 +583,7 @@ load_tries_single(struct axe_config *config)
     size_t jjj = 0;
     size_t mmm = 0;
     int tmp = 0;
+    int retval = -1;
     struct axe_barcode *this_bcd = NULL;
 
     if (!axe_config_ok(config)) {
@@ -605,16 +608,14 @@ load_tries_single(struct axe_config *config)
                         this_bcd->seq1, iii);
                 return 1;
             }
-            TBD_DEBUG_LOG("[load_tries] New r1 barcode (not in trie)\n");
         } else {
             fprintf(stderr, "ERROR: Duplicate barcode %s\n", this_bcd->seq1);
             return 1;
         }
         for (jjj = 1; jjj <= config->mismatches; jjj++) {
-            TBD_DEBUG_LOG("[load_tries] Mutating r1 barcode\n");
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq1,
                                          this_bcd->len1, jjj, 0);
-            TBD_DEBUG_LOG("[load_tries] Mutated r1 barcode\n");
+            assert(mutated != NULL);
             for (mmm = 0; mmm < num_mutated; mmm++) {
                 ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
                 if (ret != 0) {
@@ -633,7 +634,12 @@ load_tries_single(struct axe_config *config)
             num_mutated = 0;
         }
     }
-    return 0;
+exit:
+    for (mmm = 0; mmm < num_mutated; mmm++) {
+        km_free(mutated[mmm]);
+    }
+    km_free(mutated);
+    return retval;
 }
 
 int
@@ -694,6 +700,11 @@ axe_make_outputs(struct axe_config *config)
     config->unknown_output = axe_output_create(config->unknown_files[0],
                                                config->unknown_files[1],
                                                config->out_mode, zmode);
+    if (config->unknown_output == NULL) {
+        fprintf(stderr, "[make_outputs] couldn't create file at %s\n",
+                name_fwd);
+        goto error;
+    }
     km_free(file_ext);
     km_free(zmode);
     return 0;
@@ -1114,7 +1125,7 @@ interleaved:
         if (barcode_pair_index < 0) {
             /* Invalid match */
             seqfile_write(config->unknown_output->fwd_file, seq1);
-            seqfile_write(config->unknown_output->rev_file, seq2);
+            seqfile_write(config->unknown_output->fwd_file, seq2);
             config->reads_failed++;
             continue;
         }

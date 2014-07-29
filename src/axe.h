@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <inttypes.h>
 #include <time.h>
 
