@@ -634,6 +634,8 @@ load_tries_single(struct axe_config *config)
             num_mutated = 0;
         }
     }
+    /* we got here, so we succeeded */
+    retval = 0;
 exit:
     for (mmm = 0; mmm < num_mutated; mmm++) {
         km_free(mutated[mmm]);
