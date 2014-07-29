@@ -544,7 +544,7 @@ load_tries_combo(struct axe_config *config)
                                          this_bcd->len2, iii, 0);
             for (mmm = 0; mmm < num_mutated; mmm++) {
                 ret = axe_trie_add(config->rev_tries[jjj], mutated[mmm], iii);
-                if (0) { //ret != 0) {
+                if (ret != 0) {
                     fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)\n",
                             config->ignore_barcode_confict ? "WARNING": "ERROR",
                             mutated[mmm], (int)jjj);
@@ -1118,7 +1118,8 @@ interleaved:
 
 paired:
     SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2)
-        ret = 1;
+        r1_ret = 1;
+        r2_ret = 1;
         for (iii = 0; iii <= config->mismatches; iii++) {
             r1_ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
             if (r1_ret == 0) {
@@ -1398,9 +1399,8 @@ axe_match_read (intptr_t *value, struct axe_trie *trie, const seq_t *seq)
     int res = 0;
     intptr_t our_val = -1;
 
-    /* *value is set to -1 on anything bad happening including failed lookup */
+    /* value is set to -1 on anything bad happening including failed lookup */
     if (value == NULL || !axe_trie_ok(trie) || !seq_ok(seq)) {
-        *value = -1;
         return -1;
     }
     if (seq->seq.l < trie->min_len) {
