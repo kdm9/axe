@@ -293,9 +293,6 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
                 fprintf(stderr, "ERROR: Setting revese read output prefix failed.\n");
                 goto error;
                 break;
-                fprintf(stderr, "ERROR: Setting interleaved output prefix failed.\n");
-                goto error;
-                break;
             case READS_UNKNOWN:
             default:
                 goto error;
