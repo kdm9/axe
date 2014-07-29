@@ -344,11 +344,11 @@ setup_barcode_lookup_combo(struct axe_config *config)
        etc in the system. */
     seq1_trie = axe_trie_create();
     seq2_trie = axe_trie_create();
+    assert(seq1_trie != NULL && seq2_trie != NULL);
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_barcode = config->barcodes[iii];
         if (!axe_barcode_ok(this_barcode)) {
             fprintf(stderr, "[setup_lookup] Bad barcode at %zu\n", iii);
-            return -1;
             goto error;
         }
         if (!trie_retrieve(seq1_trie->trie, this_barcode->seq1, &tmp)) {
@@ -517,7 +517,10 @@ load_tries_combo(struct axe_config *config)
                     fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)",
                             config->ignore_barcode_confict ? "WARNING": "ERROR",
                             mutated[mmm], (int)jjj);
-                    return 1;
+                    if (!config->ignore_barcode_confict) {
+                        retval = 1;
+                        goto exit;
+                    }
                 }
                 km_free(mutated[mmm]);
             }
@@ -548,12 +551,23 @@ load_tries_combo(struct axe_config *config)
                     fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)\n",
                             config->ignore_barcode_confict ? "WARNING": "ERROR",
                             mutated[mmm], (int)jjj);
+                    if (!config->ignore_barcode_confict) {
+                        retval = 1;
+                        goto exit;
+                    }
                 }
                 km_free(mutated[mmm]);
             }
             km_free(mutated);
         }
     }
+    /* we got here, so we succeeded */
+    retval = 0;
+exit:
+    for (mmm = 0; mmm < num_mutated; mmm++) {
+        km_free(mutated[mmm]);
+    }
+    km_free(mutated);
     return retval;
 }
 
@@ -608,7 +622,10 @@ load_tries_single(struct axe_config *config)
                             "[load_barcodes] %s: Barcode %s already in trie (%dmm)\n",
                             config->ignore_barcode_confict ? "WARNING": "ERROR",
                             mutated[mmm], (int)jjj);
-                    return 1;
+                    if (!config->ignore_barcode_confict) {
+                        retval = 1;
+                        goto exit;
+                    }
                 }
                 km_free(mutated[mmm]);
             }
@@ -1482,8 +1499,8 @@ axe_write_table(const struct axe_config *config)
     }
     res = fclose(tab_fp);
     if (res != 0) {
-        fprintf(stderr, "[write_table] ERROR: Could not close FILE * %p\n%s\n",
-                tab_fp, strerror(errno));
+        fprintf(stderr, "[write_table] ERROR: Couldn't close tab file %s\n%s\n",
+                config->table_file, strerror(errno));
         return 1;
     }
     return 0;
