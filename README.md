@@ -12,6 +12,7 @@ existing demultiplexers. Unscientific trials show AXE processes more than
 
 [![Build Status](https://travis-ci.org/kdmurray91/axe.svg?branch=dev)](https://travis-ci.org/kdmurray91/axe)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/2666/badge.svg)](https://scan.coverity.com/projects/2666)
+[![Coverage Status](https://img.shields.io/coveralls/kdmurray91/axe.svg)](https://coveralls.io/r/kdmurray91/axe?branch=master)
 
 **Warning**: Axe has not yet been comprehensively tested. However, in the
 spirit of "release early and often", here it is.
