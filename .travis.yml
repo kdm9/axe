@@ -3,13 +3,15 @@ language: c
 env:
   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
   #   via the "travis encrypt" command using the project repo's public key
-  - secure: "HOl3aP87cGovAM8Vev2y+JmhV9NY4i1GhbGqw7sR4lQCDvrIgTqDzGoP4fuOnYf7SNRo3dx3zPRE2QPs6/SSGHNY94BbKvb5gFQrlJSAwvDKRiK/k40f+k/yw2fI+8cpc3ZJT2UxVcb1YZuViIRyXEucLp09aDojNmqmdBo9r58="
  - BUILD_TYPE=Release
  - BUILD_TYPE=Release
  - BUILD_TYPE=Debug
  - BUILD_TYPE=Debug
  - BUILD_TYPE=Coverage
 
+env:
+ global:
+  secure: COVERITY_SCAN_TOKEN="HOl3aP87cGovAM8Vev2y+JmhV9NY4i1GhbGqw7sR4lQCDvrIgTqDzGoP4fuOnYf7SNRo3dx3zPRE2QPs6/SSGHNY94BbKvb5gFQrlJSAwvDKRiK/k40f+k/yw2fI+8cpc3ZJT2UxVcb1YZuViIRyXEucLp09aDojNmqmdBo9r58="
 
 compiler:
  - clang
