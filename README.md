@@ -57,6 +57,9 @@ e.g.:
 
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/home/kevin ..
 
+It's also wise to use `make install` not `sudo make install` when installing to
+a home directory.
+
 ###Dependencies:
 
 - cmake. This is installable via `sudo apt-get install cmake` on debian based
