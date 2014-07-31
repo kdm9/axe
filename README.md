@@ -57,6 +57,10 @@ e.g.:
 
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/home/kevin ..
 
+or, on a Mac OSX machine:
+
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/Users/kevin ..
+
 It's also wise to use `make install` not `sudo make install` when installing to
 a home directory.
 
