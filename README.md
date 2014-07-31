@@ -55,11 +55,10 @@ one above:
 
 e.g.:
 
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/home/kevin ..
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ ..
 
-or, on a Mac OSX machine:
-
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/Users/kevin ..
+For me, using `~/` as the prefix will install `axe` under `/home/kevin/bin` on
+GNU/Linux, and `/Users/kevin/bin` on Mac OSX.
 
 It's also wise to use `make install` not `sudo make install` when installing to
 a home directory.
