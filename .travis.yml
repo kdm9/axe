@@ -17,6 +17,7 @@ compiler:
  - gcc
 
 install:
+ - sudo apt-get update
  - sudo apt-get install lcov python-pip
  - sudo apt-get install valgrind
  - mkdir zlib && cd zlib
