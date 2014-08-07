@@ -372,7 +372,7 @@ setup_barcode_lookup_combo(struct axe_config *config)
     /* Setup barcode lookup */
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_barcode = config->barcodes[iii];
-        /* already checked above */
+        /* already checked barcode above */
         res = trie_retrieve(seq1_trie->trie, this_barcode->seq1,
                             (int32_t *)(&bcd1));
         if (!res) goto error;
@@ -482,6 +482,7 @@ load_tries_combo(struct axe_config *config)
     size_t jjj = 0;
     size_t mmm = 0;
     struct axe_barcode *this_bcd = NULL;
+    int tmp = 0;
 
     if (!axe_config_ok(config)) {
         fprintf(stderr, "[load_tries] Bad config\n");
@@ -497,8 +498,8 @@ load_tries_combo(struct axe_config *config)
         /* Either lookup the index of the first read in the barcode table, or
          * insert this barcode into the table, storing its index.
          * Note the NOT here. */
-        if (!trie_retrieve(config->fwd_tries[0]->trie, this_bcd->seq1, &bcd1)) {
-            ret = axe_trie_add(config->fwd_tries[0], this_bcd->seq1, iii);
+        if (!trie_retrieve(config->fwd_tries[0]->trie, this_bcd->seq1, &tmp)) {
+            ret = axe_trie_add(config->fwd_tries[0], this_bcd->seq1, bcd1++);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
                         this_bcd->seq1, iii);
@@ -532,8 +533,8 @@ load_tries_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         /* Likewise for the reverse read index */
-        if (!trie_retrieve(config->rev_tries[0]->trie, this_bcd->seq2, &bcd2)) {
-            ret = axe_trie_add(config->rev_tries[0], this_bcd->seq2, iii);
+        if (!trie_retrieve(config->rev_tries[0]->trie, this_bcd->seq2, &tmp)) {
+            ret = axe_trie_add(config->rev_tries[0], this_bcd->seq2, bcd2++);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
                         this_bcd->seq2, iii);
