@@ -1203,12 +1203,6 @@ paired:
             continue;
         }
         /* Found a match */
-        if (bcd1 < 0 || bcd1 > config->n_barcodes_1 -1 || \
-                bcd2 < 0 || bcd2 > config->n_barcodes_2 -1) {
-            printf("b1 %zi b2 %zi n1 %zu n2 %zu\n", bcd1, bcd2,
-                    config->n_barcodes_1, config->n_barcodes_2);
-
-        }
         barcode_pair_index = config->barcode_lookup[bcd1][bcd2];
         if (barcode_pair_index < 0 || \
                 barcode_pair_index > (ssize_t) config->n_barcode_pairs) {
