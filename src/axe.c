@@ -472,8 +472,8 @@ axe_make_zmode(const struct axe_config *config)
 static inline int
 load_tries_combo(struct axe_config *config)
 {
-    int bcd1 = 0;
-    int bcd2 = 0;
+    int bcd1 = -1;
+    int bcd2 = -1;
     int retval = 0;
     char **mutated = NULL;
     size_t num_mutated = 0;
@@ -499,7 +499,7 @@ load_tries_combo(struct axe_config *config)
          * insert this barcode into the table, storing its index.
          * Note the NOT here. */
         if (!trie_retrieve(config->fwd_tries[0]->trie, this_bcd->seq1, &tmp)) {
-            ret = axe_trie_add(config->fwd_tries[0], this_bcd->seq1, bcd1++);
+            ret = axe_trie_add(config->fwd_tries[0], this_bcd->seq1, ++bcd1);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
                         this_bcd->seq1, iii);
@@ -514,15 +514,25 @@ load_tries_combo(struct axe_config *config)
                                          this_bcd->len1, jjj, 0);
             assert(mutated != NULL);
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
+                ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], bcd1);
                 if (ret != 0) {
-                    fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)",
-                            config->ignore_barcode_confict ? "WARNING": "ERROR",
-                            mutated[mmm], (int)jjj);
-                    if (!config->ignore_barcode_confict) {
-                        retval = 1;
-                        goto exit;
+                    if (config->permissive) {
+                        if (config->verbosity >= 0) {
+                            fprintf(stderr,
+                                    "[%s] warning: Will only match %s to %dmm\n",
+                                    __func__, this_bcd->id, (int)jjj - 1);
+
+                        }
+                        trie_delete(config->fwd_tries[jjj]->trie,
+                                    mutated[mmm]);
+                        km_free(mutated[mmm]);
+                        continue;
                     }
+                    fprintf(stderr,
+                            "[%s] ERROR: Barcode %s already in fwd trie (%dmm) %s\n",
+                            __func__, mutated[mmm], (int)jjj, this_bcd->seq1);
+                    retval = 1;
+                    goto exit;
                 }
                 km_free(mutated[mmm]);
             }
@@ -534,7 +544,7 @@ load_tries_combo(struct axe_config *config)
         this_bcd = config->barcodes[iii];
         /* Likewise for the reverse read index */
         if (!trie_retrieve(config->rev_tries[0]->trie, this_bcd->seq2, &tmp)) {
-            ret = axe_trie_add(config->rev_tries[0], this_bcd->seq2, bcd2++);
+            ret = axe_trie_add(config->rev_tries[0], this_bcd->seq2, ++bcd2);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
                         this_bcd->seq2, iii);
@@ -546,31 +556,43 @@ load_tries_combo(struct axe_config *config)
         for (jjj = 1; jjj <= config->mismatches; jjj++) {
             num_mutated = 0;
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq2,
-                                         this_bcd->len2, iii, 0);
+                                         this_bcd->len2, jjj, 0);
             assert(mutated != NULL);
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->rev_tries[jjj], mutated[mmm], iii);
+                ret = axe_trie_add(config->rev_tries[jjj], mutated[mmm], bcd2);
                 if (ret != 0) {
-                    fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)\n",
-                            config->ignore_barcode_confict ? "WARNING": "ERROR",
-                            mutated[mmm], (int)jjj);
-                    if (!config->ignore_barcode_confict) {
-                        retval = 1;
-                        goto exit;
+                    if (config->permissive) {
+                        if (config->verbosity >= 0) {
+                            fprintf(stderr,
+                                    "[%s] warning: Will only match %s to %dmm\n",
+                                    __func__, this_bcd->id, (int)jjj - 1);
+
+                        }
+                        trie_delete(config->rev_tries[jjj]->trie,
+                                    mutated[mmm]);
+                        km_free(mutated[mmm]);
+                        continue;
                     }
+                    fprintf(stderr,
+                            "[%s] ERROR: Barcode %s already in rev trie (%dmm)\n",
+                            __func__, mutated[mmm], (int)jjj);
+                    retval = 1;
+                    goto exit;
                 }
                 km_free(mutated[mmm]);
             }
             km_free(mutated);
         }
     }
-    /* we got here, so we succeeded */
+    /* we got here, so we succeeded. set retval accordingly */
     retval = 0;
 exit:
-    for (mmm = 0; mmm < num_mutated; mmm++) {
-        km_free(mutated[mmm]);
+    if (mutated != NULL) {
+        for (mmm = 0; mmm < num_mutated; mmm++) {
+            km_free(mutated[mmm]);
+        }
+        km_free(mutated);
     }
-    km_free(mutated);
     return retval;
 }
 
@@ -620,14 +642,23 @@ load_tries_single(struct axe_config *config)
             for (mmm = 0; mmm < num_mutated; mmm++) {
                 ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
                 if (ret != 0) {
-                    fprintf(stderr,
-                            "[load_barcodes] %s: Barcode %s already in trie (%dmm)\n",
-                            config->ignore_barcode_confict ? "WARNING": "ERROR",
-                            mutated[mmm], (int)jjj);
-                    if (!config->ignore_barcode_confict) {
-                        retval = 1;
-                        goto exit;
+                    if (config->permissive) {
+                        if (config->verbosity >= 0) {
+                            fprintf(stderr,
+                                    "[%s] warning: Will only match %s to %dmm\n",
+                                    __func__, this_bcd->id, (int)jjj - 1);
+
+                        }
+                        trie_delete(config->fwd_tries[jjj]->trie,
+                                    mutated[mmm]);
+                        km_free(mutated[mmm]);
+                        continue;
                     }
+                    fprintf(stderr,
+                            "[%s] ERROR: Barcode %s already in trie (%dmm)\n",
+                            __func__, mutated[mmm], (int)jjj);
+                    retval = 1;
+                    goto exit;
                 }
                 km_free(mutated[mmm]);
             }
@@ -1172,8 +1203,15 @@ paired:
             continue;
         }
         /* Found a match */
+        if (bcd1 < 0 || bcd1 > config->n_barcodes_1 -1 || \
+                bcd2 < 0 || bcd2 > config->n_barcodes_2 -1) {
+            printf("b1 %zi b2 %zi n1 %zu n2 %zu\n", bcd1, bcd2,
+                    config->n_barcodes_1, config->n_barcodes_2);
+
+        }
         barcode_pair_index = config->barcode_lookup[bcd1][bcd2];
-        if (barcode_pair_index < 0) {
+        if (barcode_pair_index < 0 || \
+                barcode_pair_index > (ssize_t) config->n_barcode_pairs) {
             /* No match */
             seqfile_write(config->unknown_output->fwd_file, seq1);
             seqfile_write(config->unknown_output->rev_file, seq2);

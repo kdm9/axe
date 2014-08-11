@@ -25,7 +25,6 @@ static void
 print_version(void)
 {
     fprintf(stderr, "axe Version %s\n", AXE_VERSION);
-    exit(0);
 }
 
 static void
@@ -62,15 +61,17 @@ print_help(void)
 static void
 print_usage(void)
 {
-    fprintf(stderr, "Demultiplex 5' barcoded reads quickly and accurately.\n\n");
+    print_version();
     fprintf(stderr, "USAGE:\n");
-    fprintf(stderr, "axe [-mzc2] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)\n");
+    fprintf(stderr, "axe [-mzc2p] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)\n");
     fprintf(stderr, "axe -h\n");
     fprintf(stderr, "axe -v\n\n");
     fprintf(stderr, "OPTIONS:\n");
     fprintf(stderr, "    -m, --mismatch\tMaximum hamming distance mismatch. [int, default 1]\n");
     fprintf(stderr, "    -z, --ziplevel\tGzip compression level, or 0 for plain text [int, default 0]\n");
     fprintf(stderr, "    -c, --combinatorial\tUse combinatorial barcode matching. [flag, default OFF]\n");
+    fprintf(stderr, "    -p, --permissive\tDon't error on barcode mismatch confict, matching only\n");
+    fprintf(stderr, "                    \texactly for conficting barcodes. [flag, default OFF]\n");
     fprintf(stderr, "    -2, --trim-r2\tTrim barcode from R2 read as well as R1. [flag, default OFF]\n");
     fprintf(stderr, "    -b, --barcodes\tBarcode file. See --help for example. [file]\n");
     fprintf(stderr, "    -f, --fwd-in\tInput forward read. [file]\n");
@@ -88,12 +89,13 @@ print_usage(void)
     fprintf(stderr, "\n");
 }
 
-static const char *axe_opts = "m:z:c2b:f:F:r:R:i:I:t:u:U:hVvq";
+static const char *axe_opts = "m:z:c2pb:f:F:r:R:i:I:t:u:U:hVvq";
 static const struct option axe_longopts[] = {
     { "mismatch",   optional_argument,  NULL,   'm' },
     { "ziplevel",   required_argument,  NULL,   'z' },
     { "combinatorial", no_argument,     NULL,   'c' },
     { "trim-r2",    no_argument,        NULL,   '2' },
+    { "permissive", no_argument,        NULL,   'p' },
     { "barcodes",   required_argument,  NULL,   'b' },
     { "fwd-in",     required_argument,  NULL,   'f' },
     { "fwd-out",    required_argument,  NULL,   'F' },
@@ -133,6 +135,9 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
                 break;
             case 'c':
                 config->match_combo |= 1;
+                break;
+            case 'p':
+                config->permissive |= 1;
                 break;
             case '2':
                 config->trim_rev |= 1;

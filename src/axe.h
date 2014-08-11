@@ -99,8 +99,8 @@ struct axe_config {
     int verbosity;
     int have_cli_opts           :1; /* Set to 1 once CLI is parsed */
     int match_combo             :1; /* Match using combinatorial strategy */
-    int ignore_barcode_confict  :1;
-    int trim_rev                :1;
+    int permissive              :1; /* Don't error on mutated bcd confict */
+    int trim_rev                :1; /* Trim rev read same as fwd read */
 };
 
 static inline int
