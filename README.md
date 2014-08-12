@@ -1,13 +1,13 @@
 AXE
 ===
 
-> Demultiplex NGS reads using trie data structures. It's fast, and made of tries!
+> De-multiplex NGS reads using trie data structures. It's fast, and made of tries!
 
 AXE very rapidly selects the optimal barcode present in a sequence read, even
 in the presence of sequencing errors. The algorithm is able to handle
 combinatorial barcoding, barcodes of differing length, and several mismatches
 per barcode.  Early result indicate far improved accuracy and speed over
-existing demultiplexers. Unscientific trials show AXE processes more than
+existing de-multiplexers. Unscientific trials show AXE processes more than
 500,000 reads per second.
 
 [![Build Status](https://travis-ci.org/kdmurray91/axe.svg?branch=dev)](https://travis-ci.org/kdmurray91/axe)
@@ -21,10 +21,10 @@ spirit of "release early and often", here it is.
 Installation:
 -------------
 
-Currently, only recent GNU/Linux systems are offically supported. All code and
+Currently, only recent GNU/Linux systems are officially supported. All code and
 the build system is portable, so compilation and use on other systems should be
 possible, I just don't have machines available to test. Please report any
-installation issues on any system as github bugs and I'll do my best to sort
+installation issues on any system as GitHub bugs and I'll do my best to sort
 them out.
 
 In short, on Linux, get the dependencies (see below), and:
@@ -54,12 +54,12 @@ use `make install` not `sudo make install` when installing to a home directory.
 
 - cmake. This is installable via `sudo apt-get install cmake` on Debian based
   systems, or `brew install cmake` using homebrew on OS X.
-- zlib version >= 1.2.5. On Debian, use the pacakge `zlib1g-dev`.
+- zlib version >= 1.2.5. On Debian, use the package `zlib1g-dev`.
 - kmlib, tinytest and libdatrie (bundled in source, if you used
   `git clone --recursive` or an installation tarball)
 
 You'll possibly need to install zlib to your chosen prefix (e.g. `~/`) on
-supercomuters, which often have very old versions of zlib. To do so:
+supercomputers, which often have very old versions of zlib. To do so:
 
     wget http://zlib.net/zlib-1.2.8.tar.gz
     tar xvf zlib-1.2.8.tar.gz
@@ -82,9 +82,9 @@ at https://axe-demultiplexer.readthedocs.org/en/latest/ .
 Implementation Progress:
 ------------------------
 
- - [x] Single ended read demultiplexing
- - [x] Interleaved/Paired input and output with single-ended demultiplexing
- - [x] Combinatorial demultiplexing
+ - [x] Single ended read de-multiplexing
+ - [x] Interleaved/Paired input and output with single-ended de-multiplexing
+ - [x] Combinatorial de-multiplexing
  - [x] CLI integration tests
  - [ ] Comprehensive `libaxe` tests
  - [ ] Comprehensive CLI tests
@@ -102,7 +102,7 @@ LICENSE
 -------
 
 The source of axe itself, namely `src/axe*.[ch]` and `tests/*.[ch]`, is
-Copyright 2014 Kevin Murray. All axe source code is licenced under the GNU
+Copyright 2014 Kevin Murray. All axe source code is licensed under the GNU
 GPL version 3, a copy of which is included with this source as `LICENCE.txt`
 
 The source of `tinytest`, located in `tests/tinytest`, is Copyright 2009-2012
@@ -110,6 +110,6 @@ Nick Matthewson; `tinytest` is distributed under the 3-clause BSD license.
 `tinytest` is hosted at [Nick's github page](https://github.com/nmathewson/tinytest).
 
 The source of `libdatrie`, located in `src/datrie`, is Copyright 2006 Theppitak
-Karoonboonyanan, and is licenced under the GNU LGPL version 2.1 per
+Karoonboonyanan, and is licensed under the GNU LGPL version 2.1 per
 `src/datrie/COPYING`. `libdatrie` is hosted at Theppitak Karoonboonyanan's
 website, [here](http://linux.thai.net/~thep/datrie/datrie.html).
