@@ -16,6 +16,7 @@
  * ============================================================================
  */
 #include "tests.h"
+#include <assert.h>
 
 
 struct testgroup_t axe_tests[] = {
@@ -44,16 +45,16 @@ main (int argc, const char *argv[])
        data_prefix = strdup(argv[1]);
        our_argc -= 1;
        our_argv += 1;
-    }
-    if (data_prefix == NULL) {
+    } else {
         data_prefix = strdup(".");
     }
+    assert(data_prefix != NULL);
     if (access(data_prefix, W_OK | X_OK | R_OK) != 0) {
         fprintf(stderr, "Could not access data prefix dir '%s'\n", data_prefix);
         free(data_prefix);
         exit(EXIT_FAILURE);
     }
-    res = tinytest_main(argc-1, argv+1, axe_tests);
+    res = tinytest_main(our_argc, our_argv, axe_tests);
     free(data_prefix);
     return res;
 }

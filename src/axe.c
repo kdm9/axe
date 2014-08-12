@@ -139,11 +139,11 @@ axe_output_create(const char *fwd_fpath, const char *rev_fpath,
     out = km_calloc(1, sizeof(*out));
     out->mode = mode;
     out->fwd_file = seqfile_create(fwd_fpath, fp_mode);
-    seqfile_set_format(out->fwd_file, FASTQ_FMT);
     if (out->fwd_file == NULL) {
         km_free(out);
         return NULL;
     }
+    seqfile_set_format(out->fwd_file, FASTQ_FMT);
     if (rev_fpath != NULL) {
         out->rev_file = seqfile_create(rev_fpath, fp_mode);
         if (out->rev_file == NULL) {
@@ -344,11 +344,11 @@ setup_barcode_lookup_combo(struct axe_config *config)
        etc in the system. */
     seq1_trie = axe_trie_create();
     seq2_trie = axe_trie_create();
+    assert(seq1_trie != NULL && seq2_trie != NULL);
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_barcode = config->barcodes[iii];
         if (!axe_barcode_ok(this_barcode)) {
             fprintf(stderr, "[setup_lookup] Bad barcode at %zu\n", iii);
-            return -1;
             goto error;
         }
         if (!trie_retrieve(seq1_trie->trie, this_barcode->seq1, &tmp)) {
@@ -372,7 +372,7 @@ setup_barcode_lookup_combo(struct axe_config *config)
     /* Setup barcode lookup */
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_barcode = config->barcodes[iii];
-        /* already checked above */
+        /* already checked barcode above */
         res = trie_retrieve(seq1_trie->trie, this_barcode->seq1,
                             (int32_t *)(&bcd1));
         if (!res) goto error;
@@ -472,8 +472,8 @@ axe_make_zmode(const struct axe_config *config)
 static inline int
 load_tries_combo(struct axe_config *config)
 {
-    int bcd1 = 0;
-    int bcd2 = 0;
+    int bcd1 = -1;
+    int bcd2 = -1;
     int retval = 0;
     char **mutated = NULL;
     size_t num_mutated = 0;
@@ -482,6 +482,7 @@ load_tries_combo(struct axe_config *config)
     size_t jjj = 0;
     size_t mmm = 0;
     struct axe_barcode *this_bcd = NULL;
+    int tmp = 0;
 
     if (!axe_config_ok(config)) {
         fprintf(stderr, "[load_tries] Bad config\n");
@@ -497,8 +498,8 @@ load_tries_combo(struct axe_config *config)
         /* Either lookup the index of the first read in the barcode table, or
          * insert this barcode into the table, storing its index.
          * Note the NOT here. */
-        if (!trie_retrieve(config->fwd_tries[0]->trie, this_bcd->seq1, &bcd1)) {
-            ret = axe_trie_add(config->fwd_tries[0], this_bcd->seq1, iii);
+        if (!trie_retrieve(config->fwd_tries[0]->trie, this_bcd->seq1, &tmp)) {
+            ret = axe_trie_add(config->fwd_tries[0], this_bcd->seq1, ++bcd1);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
                         this_bcd->seq1, iii);
@@ -511,13 +512,27 @@ load_tries_combo(struct axe_config *config)
             /* Do the forwards read barcode */
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq1,
                                          this_bcd->len1, jjj, 0);
+            assert(mutated != NULL);
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
+                ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], bcd1);
                 if (ret != 0) {
-                    fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)",
-                            config->ignore_barcode_confict ? "WARNING": "ERROR",
-                            mutated[mmm], (int)jjj);
-                    return 1;
+                    if (config->permissive) {
+                        if (config->verbosity >= 0) {
+                            fprintf(stderr,
+                                    "[%s] warning: Will only match %s to %dmm\n",
+                                    __func__, this_bcd->id, (int)jjj - 1);
+
+                        }
+                        trie_delete(config->fwd_tries[jjj]->trie,
+                                    mutated[mmm]);
+                        km_free(mutated[mmm]);
+                        continue;
+                    }
+                    fprintf(stderr,
+                            "[%s] ERROR: Barcode %s already in fwd trie (%dmm) %s\n",
+                            __func__, mutated[mmm], (int)jjj, this_bcd->seq1);
+                    retval = 1;
+                    goto exit;
                 }
                 km_free(mutated[mmm]);
             }
@@ -528,8 +543,8 @@ load_tries_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         /* Likewise for the reverse read index */
-        if (!trie_retrieve(config->rev_tries[0]->trie, this_bcd->seq2, &bcd2)) {
-            ret = axe_trie_add(config->rev_tries[0], this_bcd->seq2, iii);
+        if (!trie_retrieve(config->rev_tries[0]->trie, this_bcd->seq2, &tmp)) {
+            ret = axe_trie_add(config->rev_tries[0], this_bcd->seq2, ++bcd2);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
                         this_bcd->seq2, iii);
@@ -541,18 +556,42 @@ load_tries_combo(struct axe_config *config)
         for (jjj = 1; jjj <= config->mismatches; jjj++) {
             num_mutated = 0;
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq2,
-                                         this_bcd->len2, iii, 0);
+                                         this_bcd->len2, jjj, 0);
+            assert(mutated != NULL);
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->rev_tries[jjj], mutated[mmm], iii);
-                if (0) { //ret != 0) {
-                    fprintf(stderr, "%s: Barcode confict! %s already in trie (%dmm)\n",
-                            config->ignore_barcode_confict ? "WARNING": "ERROR",
-                            mutated[mmm], (int)jjj);
+                ret = axe_trie_add(config->rev_tries[jjj], mutated[mmm], bcd2);
+                if (ret != 0) {
+                    if (config->permissive) {
+                        if (config->verbosity >= 0) {
+                            fprintf(stderr,
+                                    "[%s] warning: Will only match %s to %dmm\n",
+                                    __func__, this_bcd->id, (int)jjj - 1);
+
+                        }
+                        trie_delete(config->rev_tries[jjj]->trie,
+                                    mutated[mmm]);
+                        km_free(mutated[mmm]);
+                        continue;
+                    }
+                    fprintf(stderr,
+                            "[%s] ERROR: Barcode %s already in rev trie (%dmm)\n",
+                            __func__, mutated[mmm], (int)jjj);
+                    retval = 1;
+                    goto exit;
                 }
                 km_free(mutated[mmm]);
             }
             km_free(mutated);
         }
+    }
+    /* we got here, so we succeeded. set retval accordingly */
+    retval = 0;
+exit:
+    if (mutated != NULL) {
+        for (mmm = 0; mmm < num_mutated; mmm++) {
+            km_free(mutated[mmm]);
+        }
+        km_free(mutated);
     }
     return retval;
 }
@@ -567,6 +606,7 @@ load_tries_single(struct axe_config *config)
     size_t jjj = 0;
     size_t mmm = 0;
     int tmp = 0;
+    int retval = -1;
     struct axe_barcode *this_bcd = NULL;
 
     if (!axe_config_ok(config)) {
@@ -591,24 +631,34 @@ load_tries_single(struct axe_config *config)
                         this_bcd->seq1, iii);
                 return 1;
             }
-            TBD_DEBUG_LOG("[load_tries] New r1 barcode (not in trie)\n");
         } else {
             fprintf(stderr, "ERROR: Duplicate barcode %s\n", this_bcd->seq1);
             return 1;
         }
         for (jjj = 1; jjj <= config->mismatches; jjj++) {
-            TBD_DEBUG_LOG("[load_tries] Mutating r1 barcode\n");
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq1,
                                          this_bcd->len1, jjj, 0);
-            TBD_DEBUG_LOG("[load_tries] Mutated r1 barcode\n");
+            assert(mutated != NULL);
             for (mmm = 0; mmm < num_mutated; mmm++) {
                 ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
                 if (ret != 0) {
+                    if (config->permissive) {
+                        if (config->verbosity >= 0) {
+                            fprintf(stderr,
+                                    "[%s] warning: Will only match %s to %dmm\n",
+                                    __func__, this_bcd->id, (int)jjj - 1);
+
+                        }
+                        trie_delete(config->fwd_tries[jjj]->trie,
+                                    mutated[mmm]);
+                        km_free(mutated[mmm]);
+                        continue;
+                    }
                     fprintf(stderr,
-                            "[load_barcodes] %s: Barcode %s already in trie (%dmm)\n",
-                            config->ignore_barcode_confict ? "WARNING": "ERROR",
-                            mutated[mmm], (int)jjj);
-                    return 1;
+                            "[%s] ERROR: Barcode %s already in trie (%dmm)\n",
+                            __func__, mutated[mmm], (int)jjj);
+                    retval = 1;
+                    goto exit;
                 }
                 km_free(mutated[mmm]);
             }
@@ -616,7 +666,14 @@ load_tries_single(struct axe_config *config)
             num_mutated = 0;
         }
     }
-    return 0;
+    /* we got here, so we succeeded */
+    retval = 0;
+exit:
+    for (mmm = 0; mmm < num_mutated; mmm++) {
+        km_free(mutated[mmm]);
+    }
+    km_free(mutated);
+    return retval;
 }
 
 int
@@ -677,6 +734,11 @@ axe_make_outputs(struct axe_config *config)
     config->unknown_output = axe_output_create(config->unknown_files[0],
                                                config->unknown_files[1],
                                                config->out_mode, zmode);
+    if (config->unknown_output == NULL) {
+        fprintf(stderr, "[make_outputs] couldn't create file at %s\n",
+                name_fwd);
+        goto error;
+    }
     km_free(file_ext);
     km_free(zmode);
     return 0;
@@ -1097,7 +1159,7 @@ interleaved:
         if (barcode_pair_index < 0) {
             /* Invalid match */
             seqfile_write(config->unknown_output->fwd_file, seq1);
-            seqfile_write(config->unknown_output->rev_file, seq2);
+            seqfile_write(config->unknown_output->fwd_file, seq2);
             config->reads_failed++;
             continue;
         }
@@ -1118,7 +1180,8 @@ interleaved:
 
 paired:
     SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2)
-        ret = 1;
+        r1_ret = 1;
+        r2_ret = 1;
         for (iii = 0; iii <= config->mismatches; iii++) {
             r1_ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
             if (r1_ret == 0) {
@@ -1141,7 +1204,8 @@ paired:
         }
         /* Found a match */
         barcode_pair_index = config->barcode_lookup[bcd1][bcd2];
-        if (barcode_pair_index < 0) {
+        if (barcode_pair_index < 0 || \
+                barcode_pair_index > (ssize_t) config->n_barcode_pairs) {
             /* No match */
             seqfile_write(config->unknown_output->fwd_file, seq1);
             seqfile_write(config->unknown_output->rev_file, seq2);
@@ -1398,9 +1462,8 @@ axe_match_read (intptr_t *value, struct axe_trie *trie, const seq_t *seq)
     int res = 0;
     intptr_t our_val = -1;
 
-    /* *value is set to -1 on anything bad happening including failed lookup */
+    /* value is set to -1 on anything bad happening including failed lookup */
     if (value == NULL || !axe_trie_ok(trie) || !seq_ok(seq)) {
-        *value = -1;
         return -1;
     }
     if (seq->seq.l < trie->min_len) {
@@ -1482,8 +1545,8 @@ axe_write_table(const struct axe_config *config)
     }
     res = fclose(tab_fp);
     if (res != 0) {
-        fprintf(stderr, "[write_table] ERROR: Could not close FILE * %p\n%s\n",
-                tab_fp, strerror(errno));
+        fprintf(stderr, "[write_table] ERROR: Couldn't close tab file %s\n%s\n",
+                config->table_file, strerror(errno));
         return 1;
     }
     return 0;
