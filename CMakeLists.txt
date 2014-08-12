@@ -1,12 +1,21 @@
 cmake_minimum_required(VERSION 2.8)
 project(axe C)
 
-set(VERSION "git")
 # Cmake options
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 enable_testing()
+
+# git versioning
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
+INCLUDE(GetGitRevisionDescription)
+get_git_head_revision(rev hash)
+STRING(SUBSTRING ${hash} 0 10 hash10)
+GET_FILENAME_COMPONENT(shortref ${rev} NAME)
+
+set(VERSION "git@${shortref}/${hash10}")
+MESSAGE(STATUS "Building axe version:  ${VERSION}")
 
 # CC options
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -DAXE_VERSION=\\\"${VERSION}\\\"")
