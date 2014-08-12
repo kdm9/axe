@@ -527,7 +527,6 @@ load_tries_combo(struct axe_config *config)
                             fprintf(stderr,
                                     "[%s] warning: Will only match %s to %dmm\n",
                                     __func__, this_bcd->id, (int)jjj - 1);
-
                         }
                         trie_delete(config->fwd_tries[jjj]->trie,
                                     mutated[mmm]);
@@ -576,7 +575,6 @@ load_tries_combo(struct axe_config *config)
                             fprintf(stderr,
                                     "[%s] warning: Will only match %s to %dmm\n",
                                     __func__, this_bcd->id, (int)jjj - 1);
-
                         }
                         trie_delete(config->rev_tries[jjj]->trie,
                                     mutated[mmm]);
@@ -596,6 +594,7 @@ load_tries_combo(struct axe_config *config)
     }
     /* we got here, so we succeeded. set retval accordingly */
     retval = 0;
+
 exit:
     if (mutated != NULL) {
         for (mmm = 0; mmm < num_mutated; mmm++) {
@@ -660,7 +659,6 @@ load_tries_single(struct axe_config *config)
                             fprintf(stderr,
                                     "[%s] warning: Will only match %s to %dmm\n",
                                     __func__, this_bcd->id, (int)jjj - 1);
-
                         }
                         trie_delete(config->fwd_tries[jjj]->trie,
                                     mutated[mmm]);
@@ -681,11 +679,14 @@ load_tries_single(struct axe_config *config)
     }
     /* we got here, so we succeeded */
     retval = 0;
+
 exit:
-    for (mmm = 0; mmm < num_mutated; mmm++) {
-        km_free(mutated[mmm]);
+    if (mutated != NULL) {
+        for (mmm = 0; mmm < num_mutated; mmm++) {
+            km_free(mutated[mmm]);
+        }
+        km_free(mutated);
     }
-    km_free(mutated);
     return retval;
 }
 
