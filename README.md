@@ -1,7 +1,7 @@
 AXE
 ===
 
-> Demultiplex NGS reads using fast data structures. It's fast, and made of tries!
+> Demultiplex NGS reads using trie data structures. It's fast, and made of tries!
 
 AXE very rapidly selects the optimal barcode present in a sequence read, even
 in the presence of sequencing errors. The algorithm is able to handle
@@ -17,17 +17,6 @@ existing demultiplexers. Unscientific trials show AXE processes more than
 **Warning**: Axe has not yet been comprehensively tested. However, in the
 spirit of "release early and often", here it is.
 
-Implementation Progress:
-------------------------
-
- - [x] Single ended read demultiplexing
- - [x] Interleaved/Paired input and output with single-ended demultiplexing
- - [x] Combinatorial demultiplexing
- - [x] CLI integration tests
- - [ ] Comprehensive `libaxe` tests
- - [ ] Comprehensive CLI tests
-
-See also TODO.md
 
 Installation:
 -------------
@@ -58,18 +47,30 @@ e.g.:
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ ..
 
 For me, using `~/` as the prefix will install `axe` under `/home/kevin/bin` on
-GNU/Linux, and `/Users/kevin/bin` on Mac OSX.
-
-It's also wise to use `make install` not `sudo make install` when installing to
-a home directory.
+GNU/Linux, and (if I had one) `/Users/kevin/bin` on Mac OSX.It's also wise to
+use `make install` not `sudo make install` when installing to a home directory.
 
 ###Dependencies:
 
-- cmake. This is installable via `sudo apt-get install cmake` on debian based
+- cmake. This is installable via `sudo apt-get install cmake` on Debian based
   systems, or `brew install cmake` using homebrew on OS X.
-- zlib version >= 1.2.5. On debian, use the pacakge `zlib1g-dev`.
+- zlib version >= 1.2.5. On Debian, use the pacakge `zlib1g-dev`.
 - kmlib, tinytest and libdatrie (bundled in source, if you used
   `git clone --recursive` or an installation tarball)
+
+You'll possibly need to install zlib to your chosen prefix (e.g. `~/`) on
+supercomuters, which often have very old versions of zlib. To do so:
+
+    wget http://zlib.net/zlib-1.2.8.tar.gz
+    tar xvf zlib-1.2.8.tar.gz
+    cd zlib-1.2.8
+    ./configure --prefix=<your_prefix> # e.g. --prefix=~/
+    make && make install
+
+And then, use the following cmake command, assuming your prefix is `~/`:
+
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ -DZLIB_ROOT=~/ ..
+
 
 Usage:
 ------
@@ -77,10 +78,25 @@ Usage:
 Full documentation, including a basic description of the algorithm, is hosted
 at https://axe-demultiplexer.readthedocs.org/en/latest/ .
 
+
+Implementation Progress:
+------------------------
+
+ - [x] Single ended read demultiplexing
+ - [x] Interleaved/Paired input and output with single-ended demultiplexing
+ - [x] Combinatorial demultiplexing
+ - [x] CLI integration tests
+ - [ ] Comprehensive `libaxe` tests
+ - [ ] Comprehensive CLI tests
+
+See also TODO.md
+
+
 Publication
 -----------
 
 A publication is coming soon, if the reviewer gods decide to smile upon us.
+
 
 LICENSE
 -------

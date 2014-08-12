@@ -486,14 +486,16 @@ load_tries_combo(struct axe_config *config)
 
     if (!axe_config_ok(config)) {
         fprintf(stderr, "[load_tries] Bad config\n");
-        return -1;
+        ret = -1;
+        goto exit;
     }
     /* Make mutated barcodes and add to trie */
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         if (!axe_barcode_ok(this_bcd)) {
             fprintf(stderr, "[load_tries] Bad R1 barcode at %zu\n", iii);
-            return -1;
+            ret = -1;
+            goto exit;
         }
         /* Either lookup the index of the first read in the barcode table, or
          * insert this barcode into the table, storing its index.
@@ -503,7 +505,8 @@ load_tries_combo(struct axe_config *config)
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
                         this_bcd->seq1, iii);
-                return 1;
+                ret = 1;
+                goto exit;
             }
         } else {
             continue;
@@ -512,7 +515,10 @@ load_tries_combo(struct axe_config *config)
             /* Do the forwards read barcode */
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq1,
                                          this_bcd->len1, jjj, 0);
-            assert(mutated != NULL);
+            if (mutated == NULL) {
+                ret = 1;
+                goto exit;
+            }
             for (mmm = 0; mmm < num_mutated; mmm++) {
                 ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], bcd1);
                 if (ret != 0) {
@@ -521,7 +527,6 @@ load_tries_combo(struct axe_config *config)
                             fprintf(stderr,
                                     "[%s] warning: Will only match %s to %dmm\n",
                                     __func__, this_bcd->id, (int)jjj - 1);
-
                         }
                         trie_delete(config->fwd_tries[jjj]->trie,
                                     mutated[mmm]);
@@ -548,7 +553,8 @@ load_tries_combo(struct axe_config *config)
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
                         this_bcd->seq2, iii);
-                return 1;
+                retval = 1;
+                goto exit;
             }
         } else {
             continue;
@@ -557,7 +563,10 @@ load_tries_combo(struct axe_config *config)
             num_mutated = 0;
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq2,
                                          this_bcd->len2, jjj, 0);
-            assert(mutated != NULL);
+            if (mutated == NULL) {
+                ret = 1;
+                goto exit;
+            }
             for (mmm = 0; mmm < num_mutated; mmm++) {
                 ret = axe_trie_add(config->rev_tries[jjj], mutated[mmm], bcd2);
                 if (ret != 0) {
@@ -566,7 +575,6 @@ load_tries_combo(struct axe_config *config)
                             fprintf(stderr,
                                     "[%s] warning: Will only match %s to %dmm\n",
                                     __func__, this_bcd->id, (int)jjj - 1);
-
                         }
                         trie_delete(config->rev_tries[jjj]->trie,
                                     mutated[mmm]);
@@ -586,6 +594,7 @@ load_tries_combo(struct axe_config *config)
     }
     /* we got here, so we succeeded. set retval accordingly */
     retval = 0;
+
 exit:
     if (mutated != NULL) {
         for (mmm = 0; mmm < num_mutated; mmm++) {
@@ -638,7 +647,10 @@ load_tries_single(struct axe_config *config)
         for (jjj = 1; jjj <= config->mismatches; jjj++) {
             mutated = hamming_mutate_dna(&num_mutated, this_bcd->seq1,
                                          this_bcd->len1, jjj, 0);
-            assert(mutated != NULL);
+            if (mutated == NULL) {
+                ret = 1;
+                goto exit;
+            }
             for (mmm = 0; mmm < num_mutated; mmm++) {
                 ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
                 if (ret != 0) {
@@ -647,7 +659,6 @@ load_tries_single(struct axe_config *config)
                             fprintf(stderr,
                                     "[%s] warning: Will only match %s to %dmm\n",
                                     __func__, this_bcd->id, (int)jjj - 1);
-
                         }
                         trie_delete(config->fwd_tries[jjj]->trie,
                                     mutated[mmm]);
@@ -668,11 +679,14 @@ load_tries_single(struct axe_config *config)
     }
     /* we got here, so we succeeded */
     retval = 0;
+
 exit:
-    for (mmm = 0; mmm < num_mutated; mmm++) {
-        km_free(mutated[mmm]);
+    if (mutated != NULL) {
+        for (mmm = 0; mmm < num_mutated; mmm++) {
+            km_free(mutated[mmm]);
+        }
+        km_free(mutated);
     }
-    km_free(mutated);
     return retval;
 }
 
