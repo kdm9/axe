@@ -245,9 +245,6 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
                 fprintf(stderr, "ERROR: Setting revese read input file failed.\n");
                 goto error;
                 break;
-                fprintf(stderr, "ERROR: Setting interleaved input file failed.\n");
-                goto error;
-                break;
             case READS_UNKNOWN:
             default:
                 goto error;
@@ -264,6 +261,9 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
                 goto error;
                 break;
             case READS_SINGLE:
+                fprintf(stderr, "ERROR: Revese read input file set in single-end mode.\n");
+                goto error;
+                break;
             case READS_UNKNOWN:
             default:
                 /* Misc weirdness */
@@ -369,16 +369,16 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
     }
     config->have_cli_opts = 1;
     return 0;
-version:
-    axe_config_destroy(config);
-    print_version();
-    return 0;
-help:
-    config->have_cli_opts = 0;
-    return 2;
 error:
     config->have_cli_opts = 0;
     return 1;
+help:
+    config->have_cli_opts = 0;
+    return 2;
+version:
+    print_version();
+    axe_config_destroy(config);
+    exit(0);
 }
 
 int
