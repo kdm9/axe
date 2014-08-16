@@ -16,26 +16,35 @@ compiler:
  - clang
  - gcc
 
+cache:
+ directories:
+  - contrib
 install:
+ - mkdir -p ~/contrib
  - sudo apt-get update
- - sudo apt-get install lcov python-pip
- - sudo apt-get install valgrind
+ - sudo apt-get install lcov python-pip valgrind
  - mkdir zlib && cd zlib
  - wget http://zlib.net/zlib-1.2.8.tar.gz
  - tar xvxf zlib-1.2.8.tar.gz
  - cd zlib-1.2.8
- - ./configure
+ - ./configure --prefix=~/contrib
  - make
- - sudo make install
+ - make install
  - cd ../..
  - sudo pip install cpp-coveralls
+ - git clone https://github.com/kdmurray91/libqes.git
+ - cd libqes
+ - mkdir build && cd build
+ - cmake -DCMAKE_INSTALL_PREFIX=~/contrib
+ - make install
+ - cd ..
  - git submodule update --init
  - mkdir build
  - mkdir target
  - cd build
 
 script:
- - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+ - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DZLIB_ROOT=~/contrib -DLIBQES_ROOT=~/contrib
  - make
  - ctest --verbose
  - make install
