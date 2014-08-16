@@ -24,9 +24,9 @@
 #include <inttypes.h>
 #include <time.h>
 
-#include <kmutil.h>
-#include <kmseq.h>
-#include <kmseqfile.h>
+#include <qes_util.h>
+#include <qes_seq.h>
+#include <qes_seqfile.h>
 
 #include "datrie/trie.h"
 #include "datrie/alpha-map.h"
@@ -48,8 +48,8 @@ enum read_mode {
 };
 
 struct axe_output {
-    seqfile_t *fwd_file;
-    seqfile_t *rev_file;
+    struct qes_seqfile *fwd_file;
+    struct qes_seqfile *rev_file;
     enum read_mode mode;
 };
 
@@ -185,7 +185,7 @@ Name:           axe_output_create
 Paramters:      const char *fwd_fpath: Forwards/interleaved read filepath
                 const char *rev_fpath: Reverse read filepath
                 enum read_mode mode: Output mode
-                const char *fp_mode: zfopen() mode specifier. See
+                const char *fp_mode: qes_fopen() mode specifier. See
                     /usr/include/zlib.h for valid values.
 Description:    Creates and opens file members of a struct axe_output
 Returns:        struct axe_output *: A valid struct axe_output, or NULL on
@@ -246,7 +246,7 @@ int axe_print_summary(const struct axe_config *config, FILE *stream);
 /* Libraries or inner functions */
 int axe_trie_add(struct axe_trie *trie, const char *seq, size_t len);
 extern int axe_match_read(intptr_t *value, struct axe_trie *trie,
-                          const seq_t *seq);
+                          const struct qes_seq *seq);
 int product(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
 int combinations(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
 char **hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
