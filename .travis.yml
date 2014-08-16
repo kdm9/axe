@@ -7,8 +7,6 @@ env:
   - secure: "HOl3aP87cGovAM8Vev2y+JmhV9NY4i1GhbGqw7sR4lQCDvrIgTqDzGoP4fuOnYf7SNRo3dx3zPRE2QPs6/SSGHNY94BbKvb5gFQrlJSAwvDKRiK/k40f+k/yw2fI+8cpc3ZJT2UxVcb1YZuViIRyXEucLp09aDojNmqmdBo9r58="
  matrix:
   - BUILD_TYPE=Release
-  - BUILD_TYPE=Release
-  - BUILD_TYPE=Debug
   - BUILD_TYPE=Debug
   - BUILD_TYPE=Coverage
 
@@ -16,35 +14,32 @@ compiler:
  - clang
  - gcc
 
-cache:
- directories:
-  - contrib
 install:
- - mkdir -p ~/contrib
  - sudo apt-get update
  - sudo apt-get install lcov python-pip valgrind
  - mkdir zlib && cd zlib
  - wget http://zlib.net/zlib-1.2.8.tar.gz
  - tar xvxf zlib-1.2.8.tar.gz
  - cd zlib-1.2.8
- - ./configure --prefix=~/contrib
+ - ./configure
  - make
- - make install
+ - sudo make install
  - cd ../..
- - sudo pip install cpp-coveralls
- - git clone https://github.com/kdmurray91/libqes.git
+ - git clone --recursive https://github.com/kdmurray91/libqes.git
  - cd libqes
  - mkdir build && cd build
- - cmake -DCMAKE_INSTALL_PREFIX=~/contrib
- - make install
- - cd ..
+ - cmake ..
+ - make
+ - sudo make install
+ - cd ../..
  - git submodule update --init
  - mkdir build
  - mkdir target
  - cd build
+ - sudo pip install cpp-coveralls
 
 script:
- - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DZLIB_ROOT=~/contrib -DLIBQES_ROOT=~/contrib
+ - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DCMAKE_BUILD_TYPE=$BUILD_TYPE
  - make
  - ctest --verbose
  - make install
