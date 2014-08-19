@@ -55,7 +55,7 @@ use `make install` not `sudo make install` when installing to a home directory.
 - cmake. This is installable via `sudo apt-get install cmake` on Debian based
   systems, or `brew install cmake` using homebrew on OS X.
 - zlib version >= 1.2.5. On Debian, use the package `zlib1g-dev`.
-- kmlib, tinytest and libdatrie (bundled in source, if you used
+- libqes, tinytest and libdatrie (bundled in source, if you used
   `git clone --recursive` or an installation tarball)
 
 You'll possibly need to install zlib to your chosen prefix (e.g. `~/`) on
