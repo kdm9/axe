@@ -1262,7 +1262,7 @@ axe_process_file(struct axe_config *config)
         return -1;
     }
     start = clock();
-    if (config->verbosity > 0) {
+    if (config->verbosity >= 0) {
         fprintf(stderr, "[process_file] (%s) Starting demultiplexing\n",
                 nowstr());
     }
@@ -1272,7 +1272,7 @@ axe_process_file(struct axe_config *config)
         ret = process_file_single(config);
     }
     config->time_taken = (float)(clock() - start) / CLOCKS_PER_SEC;
-    if (config->verbosity > 0) {
+    if (config->verbosity >= 0) {
         fprintf(stderr, "\r[process_file] (%s) Finished demultiplexing\n",
                 nowstr());
     }
