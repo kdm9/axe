@@ -1097,21 +1097,73 @@ error:
     return 1;
 }
 
+
+static int
+process_read_pair_combo(struct axe_config *config, struct qes_seq *seq1,
+                        struct qes_seq *seq2, enum read_mode read_mode)
+{
+    ssize_t barcode_pair_index = 0;
+    intptr_t bcd1 = -1;
+    intptr_t bcd2 = -1;
+    size_t iii = 0;
+    int r1_ret = 0;
+    int r2_ret = 0;
+    size_t bcd1_len = 0;
+    size_t bcd2_len = 0;
+    struct axe_output *outfile = NULL;
+
+    for (iii = 0; iii <= config->mismatches; iii++) {
+        r1_ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
+        if (r1_ret == 0) {
+            break;
+        }
+    }
+    for (iii = 0; iii <= config->mismatches; iii++) {
+        r2_ret = axe_match_read(&bcd2, config->rev_tries[iii], seq2);
+        if (r2_ret == 0) {
+            break;
+        }
+    }
+    increment_reads_print_progress(config);
+    if (r1_ret != 0 || r2_ret != 0) {
+        /* No match */
+        qes_seqfile_write(config->unknown_output->fwd_file, seq1);
+        if (read_mode == READS_INTERLEAVED) {
+            qes_seqfile_write(config->unknown_output->fwd_file, seq2);
+        } else {
+            qes_seqfile_write(config->unknown_output->rev_file, seq2);
+        }
+        config->reads_failed++;
+        return 0;
+    }
+    /* Found a match */
+    barcode_pair_index = config->barcode_lookup[bcd1][bcd2];
+    if (barcode_pair_index < 0) {
+        /* Invalid match */
+        qes_seqfile_write(config->unknown_output->fwd_file, seq1);
+        if (read_mode == READS_INTERLEAVED) {
+            qes_seqfile_write(config->unknown_output->fwd_file, seq2);
+        } else {
+            qes_seqfile_write(config->unknown_output->rev_file, seq2);
+        }
+        config->reads_failed++;
+        return 0;
+    }
+    config->reads_demultiplexed++;
+    outfile = config->outputs[barcode_pair_index];
+    bcd1_len = config->barcodes[barcode_pair_index]->len1;
+    bcd2_len = config->barcodes[barcode_pair_index]->len2;
+    config->barcodes[barcode_pair_index]->count++;
+    return write_barcoded_read_combo(outfile, seq1, seq2, bcd1_len,
+                                     bcd2_len);
+}
+
+
 static int
 process_file_combo(struct axe_config *config)
 {
     struct qes_seqfile *fwdsf = NULL;
     struct qes_seqfile *revsf = NULL;
-    ssize_t barcode_pair_index = 0;
-    struct axe_output *outfile = NULL;
-    intptr_t bcd1 = -1;
-    intptr_t bcd2 = -1;
-    size_t iii = 0;
-    int ret = 0;
-    int r1_ret = 0;
-    int r2_ret = 0;
-    size_t bcd1_len = 0;
-    size_t bcd2_len = 0;
     int have_error = 0;
 
     if (!axe_config_ok(config)) {
@@ -1148,45 +1200,7 @@ process_file_combo(struct axe_config *config)
 
 interleaved:
     QES_SEQFILE_ITER_INTERLEAVED_BEGIN(fwdsf, seq1, seq2, seqlen1, seqlen2)
-        r1_ret = 1;
-        r2_ret = 1;
-        for (iii = 0; iii <= config->mismatches; iii++) {
-            r1_ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
-            if (r1_ret == 0) {
-                break;
-            }
-        }
-        for (iii = 0; iii <= config->mismatches; iii++) {
-            r2_ret = axe_match_read(&bcd2, config->rev_tries[iii], seq2);
-            if (r2_ret == 0) {
-                break;
-            }
-        }
-        increment_reads_print_progress(config);
-        if (r1_ret != 0 || r2_ret != 0) {
-            /* No match */
-            qes_seqfile_write(config->unknown_output->fwd_file, seq1);
-            qes_seqfile_write(config->unknown_output->fwd_file, seq2);
-            config->reads_failed++;
-            continue;
-        }
-        /* Found a match */
-        barcode_pair_index = config->barcode_lookup[bcd1][bcd2];
-        if (barcode_pair_index < 0) {
-            /* Invalid match */
-            qes_seqfile_write(config->unknown_output->fwd_file, seq1);
-            qes_seqfile_write(config->unknown_output->fwd_file, seq2);
-            config->reads_failed++;
-            continue;
-        }
-        config->reads_demultiplexed++;
-        outfile = config->outputs[barcode_pair_index];
-        bcd1_len = config->barcodes[barcode_pair_index]->len1;
-        bcd2_len = config->barcodes[barcode_pair_index]->len2;
-        config->barcodes[barcode_pair_index]->count++;
-        ret = write_barcoded_read_combo(outfile, seq1, seq2, bcd1_len,
-                                        bcd2_len);
-        if (ret != 0) {
+        if (process_read_pair_combo(config, seq1, seq2, config->in_mode)) {
             have_error = 1;
             break;
         }
@@ -1196,45 +1210,7 @@ interleaved:
 
 paired:
     QES_SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2)
-        r1_ret = 1;
-        r2_ret = 1;
-        for (iii = 0; iii <= config->mismatches; iii++) {
-            r1_ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
-            if (r1_ret == 0) {
-                break;
-            }
-        }
-        for (iii = 0; iii <= config->mismatches; iii++) {
-            r2_ret = axe_match_read(&bcd2, config->rev_tries[iii], seq2);
-            if (r2_ret == 0) {
-                break;
-            }
-        }
-        increment_reads_print_progress(config);
-        if (r1_ret != 0 || r2_ret != 0) {
-            /* No match */
-            qes_seqfile_write(config->unknown_output->fwd_file, seq1);
-            qes_seqfile_write(config->unknown_output->rev_file, seq2);
-            config->reads_failed++;
-            continue;
-        }
-        /* Found a match */
-        barcode_pair_index = config->barcode_lookup[bcd1][bcd2];
-        if (barcode_pair_index < 0 || \
-                barcode_pair_index > (ssize_t) config->n_barcode_pairs) {
-            /* No match */
-            qes_seqfile_write(config->unknown_output->fwd_file, seq1);
-            qes_seqfile_write(config->unknown_output->rev_file, seq2);
-            config->reads_failed++;
-            continue;
-        }
-        config->reads_demultiplexed++;
-        outfile = config->outputs[barcode_pair_index];
-        bcd1_len = config->barcodes[barcode_pair_index]->len1;
-        config->barcodes[bcd1]->count++;
-        ret = write_barcoded_read_combo(outfile, seq1, seq2, bcd1_len,
-                                        bcd2_len);
-        if (ret != 0) {
+        if (process_read_pair_combo(config, seq1, seq2, config->in_mode)) {
             have_error = 1;
             break;
         }
