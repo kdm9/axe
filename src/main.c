@@ -62,8 +62,8 @@ static void
 print_usage(void)
 {
     print_version();
-    fprintf(stderr, "USAGE:\n");
-    fprintf(stderr, "axe [-mzc2p] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)\n");
+    fprintf(stderr, "\nUSAGE:\n");
+    fprintf(stderr, "axe [-mzc2pt] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)\n");
     fprintf(stderr, "axe -h\n");
     fprintf(stderr, "axe -v\n\n");
     fprintf(stderr, "OPTIONS:\n");
@@ -82,10 +82,11 @@ print_usage(void)
     fprintf(stderr, "    -I, --ilfq-out\tOutput interleaved paired reads prefix. [file]\n");
     fprintf(stderr, "    -u, --unknown-r1\tUnknown barcode forward/interleaved read file. [file]\n");
     fprintf(stderr, "    -U, --unknown-r2\tUnknown barcode reverse read file. [file]\n");
+    fprintf(stderr, "    -t, --table-file\tOutput a summary table of demultiplexing statistics to file. [file]\n");
     fprintf(stderr, "    -h, --help\t\tPrint this usage plus additional help.\n");
     fprintf(stderr, "    -V, --version\tPrint version string.\n");
     fprintf(stderr, "    -v, --verbose\tBe more verbose. Additive, -vv is more vebose than -v.\n");
-    fprintf(stderr, "    -q, --quiet\tBe very quiet.\n");
+    fprintf(stderr, "    -q, --quiet\t\tBe very quiet.\n");
     fprintf(stderr, "\n");
 }
 
@@ -116,6 +117,9 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
     int c = 0;
     int optind = 0;
 
+    if (argc < 2 ) {
+        return 1;
+    }
     if (!axe_config_ok(config) || argc < 1 || argv == NULL) {
         goto error;
     }
@@ -370,6 +374,8 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
     config->have_cli_opts = 1;
     return 0;
 error:
+    fprintf(stderr,
+            "Axe failed due to bad CLI flags. Consult the usage below please!\n\n");
     config->have_cli_opts = 0;
     return 1;
 help:
