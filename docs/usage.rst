@@ -70,7 +70,10 @@ Independent of barcode mode, the ``-m`` flag is used to select the maximum
 allowable hamming distance between a read's prefix and a barcode to be
 considered as a match. As "mutated" barcodes must be unique, a hamming distance
 of one is the default as typically barcodes are designed to differ by a hamming
-distance of at least two.
+distance of at least two. Optionally, (using the ``-p`` flag), axe will allow
+selective mismatch levels, where, if clashes are observed, the barcode will
+only be matched exactly. This allows one to process datasets with barcodes that
+don't have a sufficiently high distance between them.
 
 Single barcode mode
 -------------------
@@ -98,3 +101,10 @@ these two barcodes. The respective  barcodes are trimmed from both reads; the
 In combinatorial barcode mode, the barcode file has three columns:
 ``Barcode1``, ``Barcode2`` and ``ID``. Barcodes can be duplicated within the
 forward and reverse barcodes, but barcode pairs must be unique combinations.
+
+The Demultipexing Stats File
+----------------------------
+
+The ``-t`` option allows the output of per-sample read counts to a
+tab-seperated file. The file will have a header describing its format, and
+includes a line for unbarcoded reads.

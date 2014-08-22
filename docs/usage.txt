@@ -1,5 +1,5 @@
 USAGE:
-axe [-mzc2] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)
+axe [-mzc2pt] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)
 axe -h
 axe -v
 
@@ -7,6 +7,8 @@ OPTIONS:
     -m, --mismatch	Maximum hamming distance mismatch. [int, default 1]
     -z, --ziplevel	Gzip compression level, or 0 for plain text [int, default 0]
     -c, --combinatorial	Use combinatorial barcode matching. [flag, default OFF]
+    -p, --permissive	Don't error on barcode mismatch confict, matching only
+                    	exactly for conficting barcodes. [flag, default OFF]
     -2, --trim-r2	Trim barcode from R2 read as well as R1. [flag, default OFF]
     -b, --barcodes	Barcode file. See --help for example. [file]
     -f, --fwd-in	Input forward read. [file]
@@ -17,7 +19,8 @@ OPTIONS:
     -I, --ilfq-out	Output interleaved paired reads prefix. [file]
     -u, --unknown-r1	Unknown barcode forward/interleaved read file. [file]
     -U, --unknown-r2	Unknown barcode reverse read file. [file]
+    -t, --table-file	Output a summary table of demultiplexing statistics to file. [file]
     -h, --help		Print this usage plus additional help.
     -V, --version	Print version string.
-    -v, --verbose	Be more verbose. Additive, -vv is more verbose than -v.
-    -q, --quiet	Be very quiet.
+    -v, --verbose	Be more verbose. Additive, -vv is more vebose than -v.
+    -q, --quiet		Be very quiet.
