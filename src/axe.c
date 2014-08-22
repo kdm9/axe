@@ -936,8 +936,9 @@ increment_reads_print_progress(struct axe_config *config)
     config->reads_processed++;
     if (config->reads_processed % 100000 == 0) {
         if (config->verbosity >= 0) {
-            fprintf(stderr, "%s: Processed %.1fM reads\r",
-                    nowstr(), (float)(config->reads_processed/1000000.0));
+            fprintf(stderr, "%s: Processed %.1fM %s\r",
+                    nowstr(), (float)(config->reads_processed/1000000.0),
+                    config->out_mode == READS_SINGLE ? "reads" : "read pairs");
         }
     }
 
