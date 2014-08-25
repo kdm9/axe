@@ -261,15 +261,22 @@ axe_read_barcodes(struct axe_config *config)
     qf = qes_file_open(config->barcode_file, "r");
     line = qes_malloc(linesz);
     while ((linelen = qes_file_readline_realloc(qf, &line, &linesz)) > 0) {
+        /* Skip an optional header line */
         if (strncmp(line, "Barcode", 7) == 0 || \
             strncmp(line, "barcode", 7) == 0) {
             continue;
         }
-        if (n_barcode_pairs + 1 >= n_barcodes_alloced) {
+        /* Skip #-comment or ;-comment */
+        if (line[0] == '#' || line[0] == ';') {
+            continue;
+        }
+        /* Reallocate the array if we need to */
+        if (n_barcode_pairs == n_barcodes_alloced) {
             n_barcodes_alloced *= 2;
             barcodes = qes_realloc(barcodes,
                                   n_barcodes_alloced * sizeof(*barcodes));
         }
+        /* Read the barcode line into a ``struct axe_barcode`` */
         if (config->match_combo) {
             this_barcode = read_barcode_combo(line);
         } else {
@@ -279,12 +286,14 @@ axe_read_barcodes(struct axe_config *config)
             fprintf(stderr, "Couldn't parse barcode line '%s'\n", line);
             goto error;
         }
+        /* Add the barcode to the array */
         barcodes[n_barcode_pairs++] = this_barcode;
     }
+    /* Save the array to the config struct */
     config->barcodes = barcodes;
     config->n_barcode_pairs = n_barcode_pairs;
-    qes_free(line);
     qes_file_close(qf);
+    qes_free(line);
     if (config->verbosity > 0) {
         fprintf(stderr, "[read_barcodes] (%s) Read in barcodes\n",
                 nowstr());
