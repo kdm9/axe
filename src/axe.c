@@ -17,6 +17,7 @@
  */
 
 #include "axe.h"
+#include <gsl/gsl_combination.h>
 
 /* Holds the current timestamp, so we don't have to free the returned string
  * from now(). */
@@ -543,8 +544,8 @@ load_tries_combo(struct axe_config *config)
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
                             fprintf(stderr,
-                                    "[%s] warning: Will only match %s to %dmm\n",
-                                    __func__, this_bcd->id, (int)jjj - 1);
+                                    "[%s] warning: Will only match to %dmm\n",
+                                    __func__, (int)jjj - 1);
                         }
                         trie_delete(config->fwd_tries[jjj]->trie,
                                     mutated[mmm]);
@@ -675,8 +676,8 @@ load_tries_single(struct axe_config *config)
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
                             fprintf(stderr,
-                                    "[%s] warning: Will only match %s to %dmm\n",
-                                    __func__, this_bcd->id, (int)jjj - 1);
+                                    "[%s] warning: Will only match to %dmm\n",
+                                    __func__, (int)jjj - 1);
                         }
                         trie_delete(config->fwd_tries[jjj]->trie,
                                     mutated[mmm]);
@@ -1279,53 +1280,6 @@ axe_process_file(struct axe_config *config)
 }
 
 int
-combinations(int64_t len, int64_t elem, uintptr_t *choices, int at_start)
-{
-    ssize_t iii = 0;
-    if (len < elem || choices == NULL) {
-        /* error value, so don't use (!ret) as your test for the end of the
-           enclosing while loop, or on error you'll have an infinite loop */
-        return -1;
-    }
-    /* Check if we're at the start, i.e. all items are 0 */
-    if (at_start) {
-        /* In the first iteration, we set the choices to the first ``elem``
-           valid choices, i.e., 0 ... elem - 1 */
-        for (iii = 0; iii < elem; iii++) {
-            choices[iii] = iii;
-        }
-        return 1;
-    }
-    /* Can we increment the final element? */
-    if (choices[elem - 1] < (uintptr_t)(len - 1)) {
-        choices[elem - 1]++;
-        return 1;
-    } else {
-        /* Count backwards until we can increment a choice */
-        iii = elem - 1;
-        while (iii >= 0) {
-            uint64_t this_max = len - (elem - iii);
-            if (choices[iii] <  this_max) {
-                /* Woo, we've found something to increment. */
-                ssize_t jjj;
-                /* Increment this choice */
-                choices[iii]++;
-                /* fill the incrementing forwards. */
-                for (jjj = iii + 1; jjj < elem; jjj++) {
-                    choices[jjj] = choices[jjj - 1] + 1;
-                }
-                return 1;
-            }
-            iii--;
-        }
-        for (iii = 0; iii < elem; iii++) {
-            choices[iii] = 0llu;
-        }
-        return 0;
-    }
-}
-
-int
 product(int64_t len, int64_t elem, uintptr_t *choices, int at_start)
 {
     ssize_t iii = 0;
@@ -1370,24 +1324,23 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
     size_t results = 0;
     size_t results_alloced = 64;
     size_t iii;
-    uint64_t *mut_indicies;
     uint64_t *alphabet_indicies;
-    int mut_ret = 1;
     int alpha_ret = 0;
+    gsl_combination *mut_idx_comb;
 
     if (str == NULL || len < 1 || dist < 1) {
         return NULL;
     }
     result = qes_malloc(results_alloced * sizeof(*result));
-    mut_indicies = qes_calloc(dist, sizeof(*mut_indicies));
     alphabet_indicies = qes_calloc(dist, sizeof(*alphabet_indicies));
-    while ((mut_ret = combinations(len, dist, mut_indicies, !mut_ret)) == 1) {
+    mut_idx_comb = gsl_combination_calloc(len, dist);
+    do{
         while ((alpha_ret = product(n_letters, dist, alphabet_indicies,
                                     !alpha_ret)) == 1) {
             tmp = strndup(str, len+1);
             for (iii = 0; iii < dist; iii++) {
                 char replacement = alphabet[alphabet_indicies[iii]];
-                size_t mut_idx = mut_indicies[iii];
+                size_t mut_idx = gsl_combination_get(mut_idx_comb, iii);
                 if (tmp[mut_idx] == replacement) {
                     continue;
                 }
@@ -1406,8 +1359,8 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
                 qes_free(tmp);
             }
         }
-    }
-    qes_free(mut_indicies);
+    } while (gsl_combination_next(mut_idx_comb) == GSL_SUCCESS);
+    gsl_combination_free(mut_idx_comb);
     qes_free(alphabet_indicies);
     *n_results_o = results;
     return result;

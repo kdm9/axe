@@ -19,32 +19,6 @@
 #include "tests.h"
 
 static void
-test_combinations (void *ptr)
-{
-    const uint64_t len = 4;
-    const uint64_t elem = 2;
-    uintptr_t choices[] = {0,0};
-    /* Truth from python's itertools */
-    uintptr_t truth[][2] = { {0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}, };
-    int ret = 0;
-    int count = 0;
-    size_t iii = 0;
-
-    (void)ptr;
-    while ((ret = combinations(len, elem, choices, !ret)) == 1) {
-        for (iii = 0; iii < elem; iii++) {
-            tt_int_op(choices[iii], ==, truth[count][iii]);
-        }
-        count++;
-    }
-    tt_int_op(ret, ==, 0);
-    tt_int_op(count, ==, 6);
-end:
-    ;
-}
-
-
-static void
 test_product (void *ptr)
 {
     const uint64_t len = 4;
@@ -111,12 +85,10 @@ end:
             }
         }
         free(mutated);
-
     }
 }
 
 struct testcase_t core_tests[] = {
-    { "combinations", test_combinations, 0, NULL, NULL},
     { "product", test_product, 0, NULL, NULL},
     { "hamming_mutate", test_hamming_mutate, 0, NULL, NULL},
     END_OF_TESTCASES
