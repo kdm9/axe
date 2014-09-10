@@ -17,6 +17,9 @@
  */
 
 #include "axe.h"
+
+/* Holds the current timestamp, so we don't have to free the returned string
+ * from now(). */
 char _time_now[10] = "";
 
 struct axe_barcode *
@@ -107,7 +110,7 @@ axe_config_destroy_(struct axe_config *config)
 
 static char *
 _axe_format_outfile_path (const char *prefix, const char *id, int read,
-        const char *ext)
+                          const char *ext)
 {
     char buf[4096];
     int res = 0;
@@ -128,12 +131,12 @@ _axe_format_outfile_path (const char *prefix, const char *id, int read,
 
 struct axe_output *
 axe_output_create(const char *fwd_fpath, const char *rev_fpath,
-        enum read_mode mode, const char *fp_mode)
+                  enum read_mode mode, const char *fp_mode)
 {
     struct axe_output *out = NULL;
 
     if (mode == READS_UNKNOWN || fwd_fpath == NULL || \
-            (mode == READS_PAIRED && rev_fpath == NULL)) {
+        (mode == READS_PAIRED && rev_fpath == NULL)) {
         return NULL;
     }
     out = qes_calloc(1, sizeof(*out));
@@ -274,7 +277,7 @@ axe_read_barcodes(struct axe_config *config)
         if (n_barcode_pairs == n_barcodes_alloced) {
             n_barcodes_alloced *= 2;
             barcodes = qes_realloc(barcodes,
-                                  n_barcodes_alloced * sizeof(*barcodes));
+                                   n_barcodes_alloced * sizeof(*barcodes));
         }
         /* Read the barcode line into a ``struct axe_barcode`` */
         if (config->match_combo) {
@@ -321,10 +324,10 @@ setup_barcode_lookup_single(struct axe_config *config)
     config->n_barcodes_1 = config->n_barcode_pairs;
     config->n_barcodes_2 = 0;
     config->barcode_lookup = qes_malloc(config->n_barcodes_1 *
-                                       sizeof(*config->barcode_lookup));
+                                        sizeof(*config->barcode_lookup));
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         config->barcode_lookup[iii] = qes_malloc(
-                                             sizeof(**config->barcode_lookup));
+                                          sizeof(**config->barcode_lookup));
         config->barcode_lookup[iii][0] = iii;
     }
     return 0;
@@ -371,10 +374,10 @@ setup_barcode_lookup_combo(struct axe_config *config)
     config->n_barcodes_2 = n_barcodes_2;
     /* Make barcode lookup */
     config->barcode_lookup = qes_malloc(n_barcodes_1 *
-                                       sizeof(*config->barcode_lookup));
+                                        sizeof(*config->barcode_lookup));
     for (bcd1 = 0; bcd1 < config->n_barcodes_1; bcd1++) {
         config->barcode_lookup[bcd1] = qes_calloc(n_barcodes_2,
-                                           sizeof(**config->barcode_lookup));
+                                       sizeof(**config->barcode_lookup));
         memset(config->barcode_lookup[bcd1], -1,
                n_barcodes_2 * sizeof(**config->barcode_lookup));
     }
@@ -402,7 +405,8 @@ error:
 }
 
 int
-axe_setup_barcode_lookup(struct axe_config *config) {
+axe_setup_barcode_lookup(struct axe_config *config)
+{
     if (!axe_config_ok(config)) {
         return -1;
     }
@@ -422,28 +426,33 @@ axe_make_tries(struct axe_config *config)
     }
     /* We need 1 trie for 0 mm, so add 1 to cfg->mm */
     config->fwd_tries = qes_malloc((config->mismatches + 1) *
-                                  sizeof(*config->fwd_tries));
+                                   sizeof(*config->fwd_tries));
     for (iii = 0; iii <= config->mismatches; iii++) {
         config->fwd_tries[iii] = axe_trie_create();
         if (config->fwd_tries[iii] == NULL) {
-            fprintf(stderr,
-                    "[make_tries] ERROR: axe_trie_create returned NULL\n");
-            qes_free(config->fwd_tries);
-            return 1;
+            goto error;
         }
     }
     if (config->match_combo) {
+        /* We need 1 trie for 0 mm, so add 1 to cfg->mm */
         config->rev_tries = qes_malloc((config->mismatches + 1) *
-                                      sizeof(*config->rev_tries));
+                                       sizeof(*config->rev_tries));
         for (iii = 0; iii <= config->mismatches; iii++) {
             config->rev_tries[iii] = axe_trie_create();
             if (config->rev_tries[iii] == NULL) {
-                qes_free(config->rev_tries);
-                return 1;
+                goto error;
             }
         }
     }
     return 0;
+
+error:
+    fprintf(stderr, "[make_tries] ERROR: axe_trie_create returned NULL\n");
+    qes_free(config->fwd_tries);
+    if (config->match_combo) {
+        qes_free(config->rev_tries);
+    }
+    return 1;
 }
 
 static char *
@@ -716,35 +725,35 @@ axe_make_outputs(struct axe_config *config)
     file_ext = axe_make_file_ext(config);
     zmode = axe_make_zmode(config);
     config->outputs = qes_calloc(config->n_barcode_pairs,
-                                sizeof(*config->outputs));
+                                 sizeof(*config->outputs));
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         /* Open barcode files */
         switch (config->out_mode) {
-            case READS_SINGLE:
-                name_fwd = _axe_format_outfile_path(config->out_prefixes[0],
-                                                    this_bcd->id, 1, file_ext);
-                name_rev = NULL;
-                break;
-            case READS_PAIRED:
-                name_fwd = _axe_format_outfile_path(config->out_prefixes[0],
-                                                    this_bcd->id, 1, file_ext);
-                name_rev = _axe_format_outfile_path(config->out_prefixes[1],
-                                                    this_bcd->id, 2, file_ext);
-                break;
-            case READS_INTERLEAVED:
-                name_fwd =  _axe_format_outfile_path(config->out_prefixes[0],
-                                                    this_bcd->id, 0, file_ext);
-                name_rev = NULL;
-                break;
-            case READS_UNKNOWN:
-            default:
-                fprintf(stderr, "[make_outputs] Error: bad output mode %i\n",
-                        config->out_mode);
-                goto error;
+        case READS_SINGLE:
+            name_fwd = _axe_format_outfile_path(config->out_prefixes[0],
+                                                this_bcd->id, 1, file_ext);
+            name_rev = NULL;
+            break;
+        case READS_PAIRED:
+            name_fwd = _axe_format_outfile_path(config->out_prefixes[0],
+                                                this_bcd->id, 1, file_ext);
+            name_rev = _axe_format_outfile_path(config->out_prefixes[1],
+                                                this_bcd->id, 2, file_ext);
+            break;
+        case READS_INTERLEAVED:
+            name_fwd =  _axe_format_outfile_path(config->out_prefixes[0],
+                                                 this_bcd->id, 0, file_ext);
+            name_rev = NULL;
+            break;
+        case READS_UNKNOWN:
+        default:
+            fprintf(stderr, "[make_outputs] Error: bad output mode %i\n",
+                    config->out_mode);
+            goto error;
         }
         config->outputs[iii] = axe_output_create(name_fwd, name_rev,
-                                                 config->out_mode, zmode);
+                               config->out_mode, zmode);
 
         if (config->outputs[iii] == NULL) {
             fprintf(stderr, "[make_outputs] couldn't create file at %s\n",
@@ -755,8 +764,8 @@ axe_make_outputs(struct axe_config *config)
         qes_free(name_rev);
     }
     config->unknown_output = axe_output_create(config->unknown_files[0],
-                                               config->unknown_files[1],
-                                               config->out_mode, zmode);
+                             config->unknown_files[1],
+                             config->out_mode, zmode);
     if (config->unknown_output == NULL) {
         fprintf(stderr, "[make_outputs] couldn't create file at %s\n",
                 name_fwd);
@@ -812,7 +821,7 @@ write_barcoded_read_single(struct axe_output *out, struct qes_seq *seq1,
     ret = qes_seqfile_write(out->fwd_file, seq1);
     if (ret < 1) {
         fprintf(stderr,
-               "[write_read_single] Error: writing to R1 file %s failed\n%s\n",
+                "[write_read_single] Error: writing to R1 file %s failed\n%s\n",
                 out->fwd_file->qf->path,
                 qes_file_error(out->fwd_file->qf));
         seq1->seq.s -= bcd_len;
@@ -836,7 +845,7 @@ write_barcoded_read_single(struct axe_output *out, struct qes_seq *seq1,
             ret = qes_seqfile_write(out->fwd_file, seq2);
             if (ret < 1) {
                 fprintf(stderr,
-                    "[process_file] Error: writing to il file %s failed\n%s\n",
+                        "[process_file] Error: writing to il file %s failed\n%s\n",
                         out->fwd_file->qf->path,
                         qes_file_error(out->fwd_file->qf));
                 return 1;
@@ -845,7 +854,7 @@ write_barcoded_read_single(struct axe_output *out, struct qes_seq *seq1,
             ret = qes_seqfile_write(out->rev_file, seq2);
             if (ret < 1) {
                 fprintf(stderr,
-                   "[process_file] Error: writing to rev file %s failed\n%s\n",
+                        "[process_file] Error: writing to rev file %s failed\n%s\n",
                         out->rev_file->qf->path,
                         qes_file_error(out->rev_file->qf));
                 return 1;
@@ -896,7 +905,7 @@ write_barcoded_read_combo(struct axe_output *out, struct qes_seq *seq1,
     ret = qes_seqfile_write(out->fwd_file, seq1);
     if (ret < 1) {
         fprintf(stderr,
-               "[process_file] Error: writing to fwd file %s failed\n%s\n",
+                "[process_file] Error: writing to fwd file %s failed\n%s\n",
                 out->fwd_file->qf->path,
                 qes_file_error(out->fwd_file->qf));
         seq1->seq.s -= bcd1_len;
@@ -917,7 +926,7 @@ write_barcoded_read_combo(struct axe_output *out, struct qes_seq *seq1,
         ret = qes_seqfile_write(out->fwd_file, seq2);
         if (ret < 1) {
             fprintf(stderr,
-                "[process_file] Error: writing to il file %s failed\n%s\n",
+                    "[process_file] Error: writing to il file %s failed\n%s\n",
                     out->fwd_file->qf->path,
                     qes_file_error(out->fwd_file->qf));
             return 1;
@@ -926,7 +935,7 @@ write_barcoded_read_combo(struct axe_output *out, struct qes_seq *seq1,
         ret = qes_seqfile_write(out->rev_file, seq2);
         if (ret < 1) {
             fprintf(stderr,
-               "[process_file] Error: writing to rev file %s failed\n%s\n",
+                    "[process_file] Error: writing to rev file %s failed\n%s\n",
                     out->rev_file->qf->path,
                     qes_file_error(out->rev_file->qf));
             return 1;
@@ -952,6 +961,7 @@ increment_reads_print_progress(struct axe_config *config)
     }
 
 }
+
 static int
 process_file_single(struct axe_config *config)
 {
@@ -976,31 +986,31 @@ process_file_single(struct axe_config *config)
         goto error;
     }
     switch(config->in_mode) {
-        case READS_SINGLE:
-            goto single;
-            break;
-        case READS_INTERLEAVED:
-            goto interleaved;
-            break;
-        case READS_PAIRED:
-            revsf = qes_seqfile_create(config->infiles[1], "r");
-            if (revsf == NULL) {
-                fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
-                        config->infiles[1]);
-                goto error;
-            }
-            goto paired;
-            break;
-        case READS_UNKNOWN:
-        default:
-            fprintf(stderr, "[process_file_single] Bad infile mode %i\n",
-                    config->in_mode);
+    case READS_SINGLE:
+        goto single;
+        break;
+    case READS_INTERLEAVED:
+        goto interleaved;
+        break;
+    case READS_PAIRED:
+        revsf = qes_seqfile_create(config->infiles[1], "r");
+        if (revsf == NULL) {
+            fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
+                    config->infiles[1]);
             goto error;
-            break;
+        }
+        goto paired;
+        break;
+    case READS_UNKNOWN:
+    default:
+        fprintf(stderr, "[process_file_single] Bad infile mode %i\n",
+                config->in_mode);
+        goto error;
+        break;
     }
 
 single:
-    QES_SEQFILE_ITER_SINGLE_BEGIN(fwdsf, seq, seqlen)
+    QES_SEQFILE_ITER_SINGLE_BEGIN(fwdsf, seq, seqlen) {
         ret = 1;
         for (iii = 0; iii <= config->mismatches; iii++) {
             ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq);
@@ -1026,12 +1036,13 @@ single:
             have_error = 1;
             break;
         }
-    QES_SEQFILE_ITER_SINGLE_END(seq)
+    }
+    QES_SEQFILE_ITER_SINGLE_END(seq);
     if (!have_error) goto clean_exit;
     else goto error;
 
 interleaved:
-    QES_SEQFILE_ITER_INTERLEAVED_BEGIN(fwdsf, seq1, seq2, seqlen1, seqlen2)
+    QES_SEQFILE_ITER_INTERLEAVED_BEGIN(fwdsf, seq1, seq2, seqlen1, seqlen2) {
         ret = 1;
         for (iii = 0; iii <= config->mismatches; iii++) {
             ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
@@ -1059,12 +1070,13 @@ interleaved:
             have_error = 1;
             break;
         }
-    QES_SEQFILE_ITER_INTERLEAVED_END(seq1, seq2)
+    }
+    QES_SEQFILE_ITER_INTERLEAVED_END(seq1, seq2);
     if (!have_error) goto clean_exit;
     else goto error;
 
 paired:
-    QES_SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2)
+    QES_SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2) {
         ret = 1;
         for (iii = 0; iii <= config->mismatches; iii++) {
             ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
@@ -1092,7 +1104,8 @@ paired:
             have_error = 1;
             break;
         }
-    QES_SEQFILE_ITER_PAIRED_END(seq1, seq2)
+    }
+    QES_SEQFILE_ITER_PAIRED_END(seq1, seq2);
     if (!have_error) goto clean_exit;
     else goto error;
 
@@ -1186,43 +1199,43 @@ process_file_combo(struct axe_config *config)
         goto error;
     }
     switch(config->in_mode) {
-        case READS_INTERLEAVED:
-            goto interleaved;
-            break;
-        case READS_PAIRED:
-            revsf = qes_seqfile_create(config->infiles[1], "r");
-            if (revsf == NULL) {
-                fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
-                        config->infiles[1]);
-                goto error;
-            }
-            goto paired;
-            break;
-        case READS_SINGLE:
-        case READS_UNKNOWN:
-        default:
-            fprintf(stderr, "[process_file_combo] Bad infile mode %i\n",
-                    config->in_mode);
+    case READS_INTERLEAVED:
+        goto interleaved;
+        break;
+    case READS_PAIRED:
+        revsf = qes_seqfile_create(config->infiles[1], "r");
+        if (revsf == NULL) {
+            fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
+                    config->infiles[1]);
             goto error;
-            break;
+        }
+        goto paired;
+        break;
+    case READS_SINGLE:
+    case READS_UNKNOWN:
+    default:
+        fprintf(stderr, "[process_file_combo] Bad infile mode %i\n",
+                config->in_mode);
+        goto error;
+        break;
     }
 
 interleaved:
     QES_SEQFILE_ITER_INTERLEAVED_BEGIN(fwdsf, seq1, seq2, seqlen1, seqlen2)
-        if (process_read_pair_combo(config, seq1, seq2, config->in_mode)) {
-            have_error = 1;
-            break;
-        }
+    if (process_read_pair_combo(config, seq1, seq2, config->in_mode)) {
+        have_error = 1;
+        break;
+    }
     QES_SEQFILE_ITER_INTERLEAVED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
 
 paired:
     QES_SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2)
-        if (process_read_pair_combo(config, seq1, seq2, config->in_mode)) {
-            have_error = 1;
-            break;
-        }
+    if (process_read_pair_combo(config, seq1, seq2, config->in_mode)) {
+        have_error = 1;
+        break;
+    }
     QES_SEQFILE_ITER_PAIRED_END(seq1, seq2)
     if (!have_error) goto clean_exit;
     else goto error;
@@ -1369,7 +1382,8 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
     mut_indicies = qes_calloc(dist, sizeof(*mut_indicies));
     alphabet_indicies = qes_calloc(dist, sizeof(*alphabet_indicies));
     while ((mut_ret = combinations(len, dist, mut_indicies, !mut_ret)) == 1) {
-        while ((alpha_ret = product(n_letters, dist, alphabet_indicies, !alpha_ret)) == 1) {
+        while ((alpha_ret = product(n_letters, dist, alphabet_indicies,
+                                    !alpha_ret)) == 1) {
             tmp = strndup(str, len+1);
             for (iii = 0; iii < dist; iii++) {
                 char replacement = alphabet[alphabet_indicies[iii]];
@@ -1386,7 +1400,7 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
                 if (results + 1 > results_alloced) {
                     results_alloced = qes_roundupz(results_alloced);
                     result = qes_realloc(result,
-                                        results_alloced * sizeof(*result));
+                                         results_alloced * sizeof(*result));
                 }
                 result[results++] = strndup(tmp, len);
                 qes_free(tmp);
@@ -1410,7 +1424,7 @@ axe_trie_create(void)
     if (map == NULL) {
         return NULL;
     }
-    #define _AM_ADD(chr)                                                    \
+#define _AM_ADD(chr)                                                    \
     ret = alpha_map_add_range(map, chr, chr);                               \
     if (ret != 0) {                                                         \
         fprintf(stderr, "[trie_create] Failed to add char %c to alphamap\n",\
@@ -1423,7 +1437,7 @@ axe_trie_create(void)
     _AM_ADD('G')
     _AM_ADD('T')
     _AM_ADD('N')
-    #undef _AM_ADD
+#undef _AM_ADD
     trie = qes_calloc(1, sizeof(*trie));
     trie->trie = trie_new(map);
     if (trie->trie == NULL) {
@@ -1576,9 +1590,9 @@ axe_print_summary(const struct axe_config *config, FILE *stream)
           config->reads_processed, tmp, config->time_taken,
           (float)(config->reads_processed / 1000) / config->time_taken, tmp);
     print("%" PRIu64 " %s contained valid barcodes\n",
-            config->reads_demultiplexed, tmp);
+          config->reads_demultiplexed, tmp);
     print("%" PRIu64 " %s could not be demultiplexed\n",
-            config->reads_failed, tmp);
+          config->reads_failed, tmp);
 #undef print
     return 0;
 }
