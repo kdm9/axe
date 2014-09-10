@@ -16,7 +16,7 @@ compiler:
 
 install:
  - sudo apt-get update
- - sudo apt-get install lcov python-pip valgrind
+ - sudo apt-get install lcov python-pip valgrind libgsl0-dev
  - mkdir zlib && cd zlib
  - wget http://zlib.net/zlib-1.2.8.tar.gz
  - tar xvxf zlib-1.2.8.tar.gz
