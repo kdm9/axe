@@ -23,7 +23,7 @@ IF("${tag}")
 ELSE()
 	git_describe(gitdesc "--abbrev=0")
 	#special test, tags starting with 0 fail if you just to "if (x)"
-	if(NOT "${gitdesc}" MATCHES "^-127")
+	if(NOT "${gitdesc}" MATCHES "^-")
 		SET(VERSION "${gitdesc}")
 	ELSE()
 		SET(VERSION "dirty")
@@ -42,7 +42,7 @@ MESSAGE(STATUS "${CMAKE_BUILD_TYPE} build of axe version: ${VERSION}")
 ###############################
 
 FIND_PACKAGE(ZLIB 1.2.5 REQUIRED)
-FIND_PACKAGE(GSL REQUIRED)
+FIND_PACKAGE(GSL 1.5 REQUIRED)
 SET(AXE_DEPENDS_LIBS
     ${AXE_DEPENDS_LIBS} ${ZLIB_LIBRARIES} ${GSL_LIBRARIES})
 MESSAGE(STATUS "Libs are ${AXE_DEPENDS_LIBS}")
