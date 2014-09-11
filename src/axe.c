@@ -93,18 +93,8 @@ axe_config_destroy_(struct axe_config *config)
     }
     qes_free(config->barcode_lookup);
     /* Tries */
-    if (config->fwd_tries != NULL) {
-        for (iii = 0; iii <= config->mismatches; iii++) {
-            axe_trie_destroy(config->fwd_tries[iii]);
-        }
-    }
-    qes_free(config->fwd_tries);
-    if (config->rev_tries != NULL) {
-        for (iii = 0; iii <= config->mismatches; iii++) {
-            axe_trie_destroy(config->rev_tries[iii]);
-        }
-    }
-    qes_free(config->rev_tries);
+    axe_trie_destroy(config->fwd_trie);
+    axe_trie_destroy(config->rev_trie);
     qes_free(config);
 }
 
@@ -425,33 +415,23 @@ axe_make_tries(struct axe_config *config)
     if (!axe_config_ok(config)) {
         return -1;
     }
-    /* We need 1 trie for 0 mm, so add 1 to cfg->mm */
-    config->fwd_tries = qes_malloc((config->mismatches + 1) *
-                                   sizeof(*config->fwd_tries));
-    for (iii = 0; iii <= config->mismatches; iii++) {
-        config->fwd_tries[iii] = axe_trie_create();
-        if (config->fwd_tries[iii] == NULL) {
-            goto error;
-        }
+    config->fwd_trie = axe_trie_create();
+    if (config->fwd_trie == NULL) {
+        goto error;
     }
     if (config->match_combo) {
-        /* We need 1 trie for 0 mm, so add 1 to cfg->mm */
-        config->rev_tries = qes_malloc((config->mismatches + 1) *
-                                       sizeof(*config->rev_tries));
-        for (iii = 0; iii <= config->mismatches; iii++) {
-            config->rev_tries[iii] = axe_trie_create();
-            if (config->rev_tries[iii] == NULL) {
-                goto error;
-            }
+        config->rev_trie = axe_trie_create();
+        if (config->rev_trie == NULL) {
+            goto error;
         }
     }
     return 0;
 
 error:
     fprintf(stderr, "[make_tries] ERROR: axe_trie_create returned NULL\n");
-    qes_free(config->fwd_tries);
+    axe_trie_destroy(config->fwd_trie);
     if (config->match_combo) {
-        qes_free(config->rev_tries);
+        axe_trie_destroy(config->rev_trie);
     }
     return 1;
 }
@@ -519,8 +499,8 @@ load_tries_combo(struct axe_config *config)
         /* Either lookup the index of the first read in the barcode table, or
          * insert this barcode into the table, storing its index.
          * Note the NOT here. */
-        if (!trie_retrieve(config->fwd_tries[0]->trie, this_bcd->seq1, &tmp)) {
-            ret = axe_trie_add(config->fwd_tries[0], this_bcd->seq1, ++bcd1);
+        if (!trie_retrieve(config->fwd_trie->trie, this_bcd->seq1, &tmp)) {
+            ret = axe_trie_add(config->fwd_trie, this_bcd->seq1, ++bcd1);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
                         this_bcd->seq1, iii);
@@ -539,7 +519,7 @@ load_tries_combo(struct axe_config *config)
                 goto exit;
             }
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], bcd1);
+                ret = axe_trie_add(config->fwd_trie, mutated[mmm], bcd1);
                 if (ret != 0) {
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
@@ -547,7 +527,7 @@ load_tries_combo(struct axe_config *config)
                                     "[%s] warning: Will only match to %dmm\n",
                                     __func__, (int)jjj - 1);
                         }
-                        trie_delete(config->fwd_tries[jjj]->trie,
+                        trie_delete(config->fwd_trie->trie,
                                     mutated[mmm]);
                         qes_free(mutated[mmm]);
                         continue;
@@ -567,8 +547,8 @@ load_tries_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         /* Likewise for the reverse read index */
-        if (!trie_retrieve(config->rev_tries[0]->trie, this_bcd->seq2, &tmp)) {
-            ret = axe_trie_add(config->rev_tries[0], this_bcd->seq2, ++bcd2);
+        if (!trie_retrieve(config->rev_trie->trie, this_bcd->seq2, &tmp)) {
+            ret = axe_trie_add(config->rev_trie, this_bcd->seq2, ++bcd2);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
                         this_bcd->seq2, iii);
@@ -587,7 +567,7 @@ load_tries_combo(struct axe_config *config)
                 goto exit;
             }
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->rev_tries[jjj], mutated[mmm], bcd2);
+                ret = axe_trie_add(config->rev_trie, mutated[mmm], bcd2);
                 if (ret != 0) {
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
@@ -595,7 +575,7 @@ load_tries_combo(struct axe_config *config)
                                     "[%s] warning: Will only match %s to %dmm\n",
                                     __func__, this_bcd->id, (int)jjj - 1);
                         }
-                        trie_delete(config->rev_tries[jjj]->trie,
+                        trie_delete(config->rev_trie->trie,
                                     mutated[mmm]);
                         qes_free(mutated[mmm]);
                         continue;
@@ -651,8 +631,8 @@ load_tries_single(struct axe_config *config)
         /* Either lookup the index of the first read in the barcode table, or
          * insert this barcode into the table, storing its index.
          * Note the NOT here. */
-        if (!trie_retrieve(config->fwd_tries[0]->trie, this_bcd->seq1, &tmp)) {
-            ret = axe_trie_add(config->fwd_tries[0], this_bcd->seq1, iii);
+        if (!trie_retrieve(config->fwd_trie->trie, this_bcd->seq1, &tmp)) {
+            ret = axe_trie_add(config->fwd_trie, this_bcd->seq1, (int)iii);
             if (ret != 0) {
                 fprintf(stderr,
                         "ERROR: Could not load barcode %s into trie %zu\n",
@@ -671,7 +651,11 @@ load_tries_single(struct axe_config *config)
                 goto exit;
             }
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
+#if 1
+                ret = axe_trie_add(config->fwd_trie, mutated[mmm], iii);
+#else
+                ret = axe_trie_add(config->fwd_trie, mutated[mmm], iii);
+#endif
                 if (ret != 0) {
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
@@ -679,7 +663,7 @@ load_tries_single(struct axe_config *config)
                                     "[%s] warning: Will only match to %dmm\n",
                                     __func__, (int)jjj - 1);
                         }
-                        trie_delete(config->fwd_tries[jjj]->trie,
+                        trie_delete(config->fwd_trie->trie,
                                     mutated[mmm]);
                         qes_free(mutated[mmm]);
                         continue;
@@ -970,7 +954,7 @@ process_file_single(struct axe_config *config)
     struct qes_seqfile *revsf = NULL;
     size_t barcode_pair_index = 0;
     struct axe_output *outfile = NULL;
-    intptr_t bcd1 = -1;
+    ssize_t bcd1 = -1;
     size_t iii = 0;
     int ret = 0;
     size_t bcd1_len = 0;
@@ -1012,13 +996,7 @@ process_file_single(struct axe_config *config)
 
 single:
     QES_SEQFILE_ITER_SINGLE_BEGIN(fwdsf, seq, seqlen) {
-        ret = 1;
-        for (iii = 0; iii <= config->mismatches; iii++) {
-            ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq);
-            if (ret == 0) {
-                break;
-            }
-        }
+        ret = axe_match_read(&bcd1, config->fwd_trie, seq);
         increment_reads_print_progress(config);
         if (ret != 0) {
             /* No match */
@@ -1044,13 +1022,7 @@ single:
 
 interleaved:
     QES_SEQFILE_ITER_INTERLEAVED_BEGIN(fwdsf, seq1, seq2, seqlen1, seqlen2) {
-        ret = 1;
-        for (iii = 0; iii <= config->mismatches; iii++) {
-            ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
-            if (ret == 0) {
-                break;
-            }
-        }
+        ret = axe_match_read(&bcd1, config->fwd_trie, seq1);
         increment_reads_print_progress(config);
         if (ret != 0) {
             /* No match */
@@ -1078,13 +1050,7 @@ interleaved:
 
 paired:
     QES_SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2) {
-        ret = 1;
-        for (iii = 0; iii <= config->mismatches; iii++) {
-            ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
-            if (ret == 0) {
-                break;
-            }
-        }
+        ret = axe_match_read(&bcd1, config->fwd_trie, seq1);
         increment_reads_print_progress(config);
         if (ret != 0) {
             /* No match */
@@ -1135,18 +1101,8 @@ process_read_pair_combo(struct axe_config *config, struct qes_seq *seq1,
     size_t bcd2_len = 0;
     struct axe_output *outfile = NULL;
 
-    for (iii = 0; iii <= config->mismatches; iii++) {
-        r1_ret = axe_match_read(&bcd1, config->fwd_tries[iii], seq1);
-        if (r1_ret == 0) {
-            break;
-        }
-    }
-    for (iii = 0; iii <= config->mismatches; iii++) {
-        r2_ret = axe_match_read(&bcd2, config->rev_tries[iii], seq2);
-        if (r2_ret == 0) {
-            break;
-        }
-    }
+    r1_ret = axe_match_read(&bcd1, config->fwd_trie, seq1);
+    r2_ret = axe_match_read(&bcd2, config->rev_trie, seq2);
     increment_reads_print_progress(config);
     if (r1_ret != 0 || r2_ret != 0) {
         /* No match */
@@ -1412,6 +1368,12 @@ axe_trie_destroy_(struct axe_trie *trie)
 }
 
 int
+axe_trie_get (struct axe_trie *trie, const char *seq, uintptr_t *data)
+{
+    if (!axe_trie_ok(trie) || seq == NULL) return -1;
+}
+
+int
 axe_trie_add (struct axe_trie *trie, const char *seq, uintptr_t data)
 {
     if (!axe_trie_ok(trie) || seq == NULL) return -1;
@@ -1422,49 +1384,57 @@ axe_trie_add (struct axe_trie *trie, const char *seq, uintptr_t data)
 }
 
 inline int
-axe_match_read (intptr_t *value, struct axe_trie *trie,
+axe_match_read (ssize_t *value, struct axe_trie *trie,
                 const struct qes_seq *seq)
 {
     TrieState *trie_iter = NULL;
+    TrieState *last_good_state = NULL;
     size_t seq_pos = 0;
-    size_t max_match_len = 0;
     int res = 0;
-    intptr_t our_val = -1;
 
     /* value is set to -1 on anything bad happening including failed lookup */
     if (value == NULL || !axe_trie_ok(trie) || !qes_seq_ok(seq)) {
         return -1;
     }
+    /* Set *value here, then we just don't update it on error */
+    *value = -1;
     if (seq->seq.l < trie->min_len) {
-        *value = -1;
         return 1;
     }
     /* Only look until the maximum of the largest barcode, or seq len */
-    max_match_len = seq->seq.l < trie->max_len ? trie->max_len : seq->seq.l;
     /* Grab tree root iter, and check it. */
     trie_iter = trie_root(trie->trie);
     if (trie_iter == NULL) {
         fprintf(stderr, "[match_read] trie_root() returned NULL!\n");
-        *value = -1;
         return -1;
     }
     /* Consume seq until we can't */
-    for (seq_pos = 0; seq_pos < max_match_len; seq_pos++) {
+    do {
         res = trie_state_walk(trie_iter, seq->seq.s[seq_pos]);
-        if (!res) {
-            break;
+        if (trie_state_is_terminal(trie_iter)) {
+            if (last_good_state != NULL) {
+                trie_state_free(last_good_state);
+            }
+            last_good_state = trie_state_clone(trie_iter);
         }
-    }
-    /* We walk the final step w/ EOS char, to "get" the data assocaited w/
-       barcode key */
-    if (trie_state_walk(trie_iter, TRIE_CHAR_TERM)) {
-        our_val = trie_state_get_data(trie_iter);
+    } while (trie_state_is_walkable(trie_iter, seq->seq.s[++seq_pos]));
+    /* If we get to a terminal state, then great! */
+    if (trie_state_is_terminal(trie_iter)) {
+        trie_state_walk(trie_iter, '\0');
+        trie_state_free(last_good_state);
+        *value =  (ssize_t) trie_state_get_data(trie_iter);
+        trie_state_free(trie_iter);
+        return 0;
+    } else if (last_good_state != NULL) {
+        trie_state_free(trie_iter);
+        trie_state_walk(last_good_state, '\0');
+        *value =  (ssize_t) trie_state_get_data(last_good_state);
+        trie_state_free(last_good_state);
+        return 0;
     }
     trie_state_free(trie_iter);
-    *value = our_val;
-    if (our_val != -1) {
-        /* we've succeeded */
-        return 0;
+    if (last_good_state != NULL) {
+        trie_state_free(last_good_state);
     }
     return 1;
 }

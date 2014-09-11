@@ -90,8 +90,8 @@ struct axe_config {
     enum read_mode out_mode;
     int out_compress_level;
     size_t mismatches;
-    struct axe_trie **fwd_tries;
-    struct axe_trie **rev_tries;
+    struct axe_trie *fwd_trie;
+    struct axe_trie *rev_trie;
     uint64_t reads_processed;
     uint64_t reads_demultiplexed;
     uint64_t reads_failed;
