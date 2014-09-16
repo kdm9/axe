@@ -73,13 +73,12 @@ class TestPareSE(AxeTest):
         self.infq = path.join(self.data, "pare.fq.gz")
         self.barcodes = path.join(self.data, "pare.barcodes")
         self.outfq = path.join(self.out, "pare_se")
-        self.nobcdfq = path.join(self.out, "pare_se_nobcd.fq")
+        self.nobcdfq = path.join(self.out, "pare_se_unknown_R1.fastq")
 
     def test_pare_se(self):
         command = [self.axe,
             "-f", self.infq,
             "-F", self.outfq,
-            "-u", self.nobcdfq,
             '-b', self.barcodes,
         ]
         self.assertTrue(self.run_and_check_stdout(command))
@@ -93,7 +92,7 @@ class TestPareSE(AxeTest):
             'pare_se_7_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
             'pare_se_8_R1.fastq': 'b349d3276ba7c7515d0093b1a49b3959',
             'pare_se_9_R1.fastq': '74b4763271aefcc135425b06730874ba',
-            'pare_se_nobcd.fq': 'd450569dd8fd4bdddffbfaeec4980273',
+            'pare_se_unknown_R1.fastq': 'd450569dd8fd4bdddffbfaeec4980273',
         }
         self.assertDictEqual(files, self.get_md5_dict())
 
@@ -101,7 +100,6 @@ class TestPareSE(AxeTest):
         command = [self.axe,
             "-f", self.infq,
             "-F", self.outfq,
-            "-u", self.nobcdfq + '.gz',
             '-b', self.barcodes,
             '-z', '9',
         ]
@@ -115,7 +113,7 @@ class TestPareSE(AxeTest):
             'pare_se_7_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
             'pare_se_8_R1.fastq.gz': 'da77b8e95827d362a1702ce4fe75c7a9',
             'pare_se_9_R1.fastq.gz': '9c160b0daa0c73e5ef0994206774a5a0',
-            'pare_se_nobcd.fq.gz': 'afd5737935814d756e89c365d2d61c7b',
+            'pare_se_unknown_R1.fastq.gz': 'afd5737935814d756e89c365d2d61c7b',
         }
         self.assertTrue(self.run_and_check_stdout(command))
         self.assertDictEqual(files, self.get_md5_dict())
@@ -124,26 +122,25 @@ class TestFakeSE(AxeTest):
     files = {
         'fake_se_1_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
         'fake_se_2_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
-        'fake_se_nobcd.fq': '836eaf06938d4a41122f284ed487a9c7',
+        'fake_se_unknown_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
     }
     zfiles = {
         'fake_se_1_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
         'fake_se_2_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
-        'fake_se_nobcd.fq.gz': '3e07353d24a3ecd315067250a6be6047',
+        'fake_se_unknown_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
     }
 
     def __init__(self, methodName='runTest'):
         super(TestFakeSE, self).__init__(methodName)
         self.barcodes = path.join(self.data, "fake.barcodes")
         self.outfq = path.join(self.out, "fake_se")
-        self.nobcdfq = path.join(self.out, "fake_se_nobcd.fq")
+        self.nobcdfq = path.join(self.out, "fake_se_unknown_R1.fastq")
 
     def _do_test(self, mm_level):
         infq = path.join(self.data, "fake_{}mm_R1.fq.gz".format(mm_level))
         command = [self.axe,
             "-f", infq,
             "-F", self.outfq,
-            "-u", self.nobcdfq,
             '-b', self.barcodes,
         ]
         self.assertTrue(self.run_and_check_stdout(command))
@@ -153,7 +150,6 @@ class TestFakeSE(AxeTest):
         command = [self.axe,
             "-f", infq,
             "-F", self.outfq,
-            "-u", self.nobcdfq + '.gz',
             '-b', self.barcodes,
             '-z', '9',
         ]
@@ -180,7 +176,7 @@ class TestFakeSE(AxeTest):
         files = {
             'fake_se_1_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
             'fake_se_2_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
-            'fake_se_nobcd.fq': 'a6de105b6c5abbc2d0d16440333adc64',
+            'fake_se_unknown_R1.fastq': 'a6de105b6c5abbc2d0d16440333adc64',
         }
         self.assertDictEqual(files, self.get_md5_dict())
 
@@ -189,7 +185,7 @@ class TestFakeSE(AxeTest):
         zfiles = {
             'fake_se_1_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
             'fake_se_2_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
-            'fake_se_nobcd.fq.gz': 'ee6979b139dbd898f058fd7649f87da2',
+            'fake_se_unknown_R1.fastq.gz': 'ee6979b139dbd898f058fd7649f87da2',
         }
         self.assertDictEqual(zfiles, self.get_md5_dict())
 
@@ -198,7 +194,7 @@ if __name__ == '__main__':
     log = logging.getLogger("AxeTest")
     fmt = logging.Formatter('%(message)s')
     cons = logging.StreamHandler()
-    cons.setLevel(logging.WARN)
+    cons.setLevel(logging.DEBUG)
     cons.setFormatter(fmt)
     log.addHandler(cons)
     log.setLevel(logging.DEBUG)

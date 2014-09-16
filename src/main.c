@@ -63,7 +63,7 @@ print_usage(void)
 {
     print_version();
     fprintf(stderr, "\nUSAGE:\n");
-    fprintf(stderr, "axe [-mzc2pt] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)\n");
+    fprintf(stderr, "axe [-mzc2pt] -b (-f [-r] | -i) (-F [-R] | -I)\n");
     fprintf(stderr, "axe -h\n");
     fprintf(stderr, "axe -v\n\n");
     fprintf(stderr, "OPTIONS:\n");
@@ -80,8 +80,6 @@ print_usage(void)
     fprintf(stderr, "    -R, --rev-out\tOutput reverse read prefix. [file]\n");
     fprintf(stderr, "    -i, --ilfq-in\tInput interleaved paired reads. [file]\n");
     fprintf(stderr, "    -I, --ilfq-out\tOutput interleaved paired reads prefix. [file]\n");
-    fprintf(stderr, "    -u, --unknown-r1\tUnknown barcode forward/interleaved read file. [file]\n");
-    fprintf(stderr, "    -U, --unknown-r2\tUnknown barcode reverse read file. [file]\n");
     fprintf(stderr, "    -t, --table-file\tOutput a summary table of demultiplexing statistics to file. [file]\n");
     fprintf(stderr, "    -h, --help\t\tPrint this usage plus additional help.\n");
     fprintf(stderr, "    -V, --version\tPrint version string.\n");
@@ -90,7 +88,7 @@ print_usage(void)
     fprintf(stderr, "\n");
 }
 
-static const char *axe_opts = "m:z:c2pb:f:F:r:R:i:I:t:u:U:hVvq";
+static const char *axe_opts = "m:z:c2pb:f:F:r:R:i:I:t:hVvq";
 static const struct option axe_longopts[] = {
     { "mismatch",   optional_argument,  NULL,   'm' },
     { "ziplevel",   required_argument,  NULL,   'z' },
@@ -182,12 +180,6 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
             case 'I':
                 config->out_prefixes[0] = strdup(optarg);
                 config->out_mode = READS_INTERLEAVED;
-                break;
-            case 'u':
-                config->unknown_files[0] = strdup(optarg);
-                break;
-            case 'U':
-                config->unknown_files[1] = strdup(optarg);
                 break;
             case 't':
                 config->table_file = strdup(optarg);
@@ -321,52 +313,6 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
             case READS_UNKNOWN:
             default:
                 /* Misc weirdness */
-                goto error;
-                break;
-        }
-    }
-    if (config->unknown_files[0] == NULL) {
-        switch (config->out_mode) {
-            case READS_SINGLE:
-            case READS_PAIRED:
-                fprintf(stderr, "ERROR: Forward read unknown barcode output file must be provided.\n");
-                break;
-            case READS_INTERLEAVED:
-                fprintf(stderr, "ERROR: Interleaved paired read unknown barcode output file must be provided.\n");
-                break;
-            case READS_UNKNOWN:
-            default:
-                break;
-        }
-        goto error;
-    }
-    if (config->unknown_files[1] == NULL) {
-        switch (config->out_mode) {
-            case READS_PAIRED:
-                fprintf(stderr, "ERROR: Reverse read unknown barcode output file must be provided.\n");
-                goto error;
-                break;
-            case READS_SINGLE:
-            case READS_INTERLEAVED:
-                break;
-            case READS_UNKNOWN:
-            default:
-                goto error;
-                break;
-        }
-    }
-    if (config->unknown_files[1] != NULL) {
-        switch (config->out_mode) {
-            case READS_PAIRED:
-                break;
-            case READS_SINGLE:
-            case READS_INTERLEAVED:
-                fprintf(stderr, "ERROR: Reverse read unknown output file cannot");
-                fprintf(stderr, " be provided with interleaved/single end output.\n");
-                goto error;
-                break;
-            case READS_UNKNOWN:
-            default:
                 goto error;
                 break;
         }

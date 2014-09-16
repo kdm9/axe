@@ -64,8 +64,6 @@ axe_config_destroy_(struct axe_config *config)
     /* File names */
     qes_free(config->barcode_file);
     qes_free(config->table_file);
-    qes_free(config->unknown_files[0]);
-    qes_free(config->unknown_files[1]);
     qes_free(config->out_prefixes[0]);
     qes_free(config->out_prefixes[1]);
     qes_free(config->infiles[0]);
@@ -112,7 +110,7 @@ _axe_format_outfile_path (const char *prefix, const char *id, int read,
     if (read > 0) {
         res = snprintf(buf, 4096, "%s_%s_R%d.%s", prefix, id, read, ext);
     } else {
-        res = snprintf(buf, 4096, "%s_%s.%s", prefix, id, ext);
+        res = snprintf(buf, 4096, "%s_%s_il.%s", prefix, id, ext);
     }
     if (res >= 4096) {
         return NULL;
@@ -448,12 +446,6 @@ axe_make_file_ext(const struct axe_config *config)
     if (!axe_config_ok(config)) {
         return NULL;
     }
-    if (config->out_mode == READS_INTERLEAVED) {
-        if (config->out_compress_level > 1) {
-            return strdup("ilfq.gz");
-        }
-        return strdup("ilfq");
-    }
     if (config->out_compress_level > 1) {
         return strdup("fastq.gz");
     }
@@ -713,6 +705,7 @@ axe_make_outputs(struct axe_config *config)
     zmode = axe_make_zmode(config);
     config->outputs = qes_calloc(config->n_barcode_pairs,
                                  sizeof(*config->outputs));
+    /* For each sample, make the filename, make an output */
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         /* Open barcode files */
@@ -750,8 +743,31 @@ axe_make_outputs(struct axe_config *config)
         qes_free(name_fwd);
         qes_free(name_rev);
     }
-    config->unknown_output = axe_output_create(config->unknown_files[0],
-                             config->unknown_files[1],
+    /* Generate the unknown file in the same manner, using id == unknown */
+    switch (config->out_mode) {
+    case READS_SINGLE:
+        name_fwd = _axe_format_outfile_path(config->out_prefixes[0],
+                                            "unknown", 1, file_ext);
+        name_rev = NULL;
+        break;
+    case READS_PAIRED:
+        name_fwd = _axe_format_outfile_path(config->out_prefixes[0],
+                                            "unknown", 1, file_ext);
+        name_rev = _axe_format_outfile_path(config->out_prefixes[1],
+                                            "unknown", 2, file_ext);
+        break;
+    case READS_INTERLEAVED:
+        name_fwd =  _axe_format_outfile_path(config->out_prefixes[0],
+                                             "unknown", 0, file_ext);
+        name_rev = NULL;
+        break;
+    case READS_UNKNOWN:
+    default:
+        fprintf(stderr, "[make_outputs] Error: bad output mode %i\n",
+                config->out_mode);
+        goto error;
+    }
+    config->unknown_output = axe_output_create(name_fwd, name_rev,
                              config->out_mode, zmode);
     if (config->unknown_output == NULL) {
         fprintf(stderr, "[make_outputs] couldn't create file at %s\n",

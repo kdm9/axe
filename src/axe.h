@@ -75,7 +75,6 @@ struct axe_config {
     char *table_file;
     char *infiles[2];
     char *out_prefixes[2];
-    char *unknown_files[2];
     struct axe_barcode **barcodes;
     struct axe_output **outputs;
     /* Array of output files. Access by bcd_lookup[1st_bcd_idx][2nd_bcd_idx]
