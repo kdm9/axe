@@ -54,12 +54,7 @@ typedef struct _DArray  DArray;
 
 DArray * da_new (void);
 
-DArray * da_fread (FILE *file);
-
 void     da_free (DArray *d);
-
-int      da_fwrite (const DArray *d, FILE *file);
-
 
 TrieIndex  da_get_root (const DArray *d);
 

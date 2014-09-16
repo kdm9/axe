@@ -41,11 +41,7 @@ typedef struct _Tail  Tail;
 
 Tail *   tail_new (void);
 
-Tail *   tail_fread (FILE *file);
-
 void     tail_free (Tail *t);
-
-int      tail_fwrite (const Tail *t, FILE *file);
 
 
 const TrieChar *    tail_get_suffix (const Tail *t, TrieIndex index);

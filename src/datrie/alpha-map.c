@@ -32,7 +32,6 @@
 
 #include "alpha-map.h"
 #include "alpha-map-private.h"
-#include "fileutils.h"
 
 /**
  * @brief Alphabet string length
@@ -90,11 +89,6 @@ typedef struct _AlphaRange {
 struct _AlphaMap {
     AlphaRange     *first_range;
 };
-
-/*-----------------------------------*
- *    PRIVATE METHODS DECLARATIONS   *
- *-----------------------------------*/
-static int  alpha_map_get_total_ranges (const AlphaMap *alpha_map);
 
 /*-----------------------------*
  *    METHODS IMPLEMENTAIONS   *
@@ -184,79 +178,6 @@ alpha_map_free (AlphaMap *alpha_map)
     }
 
     free (alpha_map);
-}
-
-AlphaMap *
-alpha_map_fread_bin (FILE *file)
-{
-    long        save_pos;
-    uint32      sig;
-    int32       total, i;
-    AlphaMap   *alpha_map;
-
-    /* check signature */
-    save_pos = ftell (file);
-    if (!file_read_int32 (file, (int32 *) &sig) || ALPHAMAP_SIGNATURE != sig)
-        goto exit_file_read;
-
-    if (NULL == (alpha_map = alpha_map_new ()))
-        goto exit_file_read;
-
-    /* read number of ranges */
-    if (!file_read_int32 (file, &total))
-        goto exit_map_created;
-
-    /* read character ranges */
-    for (i = 0; i < total; i++) {
-        int32   b, e;
-
-        if (!file_read_int32 (file, &b) || !file_read_int32 (file, &e))
-            goto exit_map_created;
-        alpha_map_add_range (alpha_map, b, e);
-    }
-
-    return alpha_map;
-
-exit_map_created:
-    alpha_map_free (alpha_map);
-exit_file_read:
-    fseek (file, save_pos, SEEK_SET);
-    return NULL;
-}
-
-static int
-alpha_map_get_total_ranges (const AlphaMap *alpha_map)
-{
-    int         n;
-    AlphaRange *range;
-
-    for (n = 0, range = alpha_map->first_range; range; range = range->next) {
-        ++n;
-    }
-
-    return n;
-}
-
-int
-alpha_map_fwrite_bin (const AlphaMap *alpha_map, FILE *file)
-{
-    AlphaRange *range;
-
-    if (!file_write_int32 (file, ALPHAMAP_SIGNATURE) ||
-        !file_write_int32 (file, alpha_map_get_total_ranges (alpha_map)))
-    {
-        return -1;
-    }
-
-    for (range = alpha_map->first_range; range; range = range->next) {
-        if (!file_write_int32 (file, range->begin) ||
-            !file_write_int32 (file, range->end))
-        {
-            return -1;
-        }
-    }
-
-    return 0;
 }
 
 /**

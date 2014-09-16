@@ -30,10 +30,6 @@
 #include <stdio.h>
 #include "alpha-map.h"
 
-AlphaMap *  alpha_map_fread_bin (FILE *file);
-
-int         alpha_map_fwrite_bin (const AlphaMap *alpha_map, FILE *file);
-
 TrieIndex   alpha_map_char_to_trie (const AlphaMap *alpha_map,
                                     AlphaChar       ac);
 

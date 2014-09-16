@@ -33,7 +33,6 @@
 
 #include "trie-private.h"
 #include "darray.h"
-#include "fileutils.h"
 
 /*----------------------------------*
  *    INTERNAL TYPES DECLARATIONS   *
@@ -205,61 +204,6 @@ exit_da_created:
 }
 
 /**
- * @brief Read double-array data from file
- *
- * @param file : the file to read
- *
- * @return a pointer to the openned double-array, NULL on failure
- *
- * Read double-array data from the opened file, starting from the current
- * file pointer until the end of double array data block. On return, the
- * file pointer is left at the position after the read block.
- */
-DArray *
-da_fread (FILE *file)
-{
-    long        save_pos;
-    DArray     *d = NULL;
-    TrieIndex   n;
-
-    /* check signature */
-    save_pos = ftell (file);
-    if (!file_read_int32 (file, &n) || DA_SIGNATURE != (uint32) n)
-        goto exit_file_read;
-
-    if (NULL == (d = (DArray *) malloc (sizeof (DArray))))
-        goto exit_file_read;
-
-    /* read number of cells */
-    if (!file_read_int32 (file, &d->num_cells))
-        goto exit_da_created;
-    if ( d->num_cells > (int32)(SIZE_MAX / sizeof (DACell)))
-        goto exit_da_created;
-    d->cells = (DACell *) malloc (d->num_cells * sizeof (DACell));
-    if (!d->cells)
-        goto exit_da_created;
-    d->cells[0].base = DA_SIGNATURE;
-    d->cells[0].check= d->num_cells;
-    for (n = 1; n < d->num_cells; n++) {
-        if (!file_read_int32 (file, &d->cells[n].base) ||
-            !file_read_int32 (file, &d->cells[n].check))
-        {
-            goto exit_da_cells_created;
-        }
-    }
-
-    return d;
-
-exit_da_cells_created:
-    free (d->cells);
-exit_da_created:
-    free (d);
-exit_file_read:
-    fseek (file, save_pos, SEEK_SET);
-    return NULL;
-}
-
-/**
  * @brief Free double-array data
  *
  * @param d : the double-array data
@@ -271,34 +215,6 @@ da_free (DArray *d)
 {
     free (d->cells);
     free (d);
-}
-
-/**
- * @brief Write double-array data
- *
- * @param d     : the double-array data
- * @param file  : the file to write to
- *
- * @return 0 on success, non-zero on failure
- *
- * Write double-array data to the given @a file, starting from the current
- * file pointer. On return, the file pointer is left after the double-array
- * data block.
- */
-int
-da_fwrite (const DArray *d, FILE *file)
-{
-    TrieIndex   i;
-
-    for (i = 0; i < d->num_cells; i++) {
-        if (!file_write_int32 (file, d->cells[i].base) ||
-            !file_write_int32 (file, d->cells[i].check))
-        {
-            return -1;
-        }
-    }
-
-    return 0;
 }
 
 

@@ -32,7 +32,6 @@
 #include <stdio.h>
 
 #include "tail.h"
-#include "fileutils.h"
 
 /*----------------------------------*
  *    INTERNAL TYPES DECLARATIONS   *
@@ -108,77 +107,6 @@ tail_new (void)
 }
 
 /**
- * @brief Read tail data from file
- *
- * @param file : the file to read
- *
- * @return a pointer to the openned tail data, NULL on failure
- *
- * Read tail data from the opened file, starting from the current
- * file pointer until the end of tail data block. On return, the
- * file pointer is left at the position after the read block.
- */
-Tail *
-tail_fread (FILE *file)
-{
-    long        save_pos;
-    Tail       *t;
-    TrieIndex   i;
-    uint32      sig;
-
-    /* check signature */
-    save_pos = ftell (file);
-    if (!file_read_int32 (file, (int32 *) &sig) || TAIL_SIGNATURE != sig)
-        goto exit_file_read;
-
-    if (NULL == (t = (Tail *) malloc (sizeof (Tail))))
-        goto exit_file_read;
-
-    if (!file_read_int32 (file, &t->first_free) ||
-        !file_read_int32 (file, &t->num_tails))
-    {
-        goto exit_tail_created;
-    }
-    if (t->num_tails > (int32)( SIZE_MAX / sizeof (TailBlock)))
-        goto exit_tail_created;
-    t->tails = (TailBlock *) malloc (t->num_tails * sizeof (TailBlock));
-    if (!t->tails)
-        goto exit_tail_created;
-    for (i = 0; i < t->num_tails; i++) {
-        int16   length;
-
-        if (!file_read_int32 (file, &t->tails[i].next_free) ||
-            !file_read_int32 (file, &t->tails[i].data) ||
-            !file_read_int16 (file, &length))
-        {
-            goto exit_in_loop;
-        }
-
-        t->tails[i].suffix = (TrieChar *) malloc (length + 1);
-        if (length > 0) {
-            if (!file_read_chars (file, (char *)t->tails[i].suffix, length)) {
-                free (t->tails[i].suffix);
-                goto exit_in_loop;
-            }
-        }
-        t->tails[i].suffix[length] = '\0';
-    }
-
-    return t;
-
-exit_in_loop:
-    while (i > 0) {
-        free (t->tails[--i].suffix);
-    }
-    free (t->tails);
-exit_tail_created:
-    free (t);
-exit_file_read:
-    fseek (file, save_pos, SEEK_SET);
-    return NULL;
-}
-
-/**
  * @brief Free tail data
  *
  * @param t : the tail data
@@ -199,51 +127,6 @@ tail_free (Tail *t)
         free (t->tails);
     }
     free (t);
-}
-
-/**
- * @brief Write tail data
- *
- * @param t     : the tail data
- * @param file  : the file to write to
- *
- * @return 0 on success, non-zero on failure
- *
- * Write tail data to the given @a file, starting from the current file
- * pointer. On return, the file pointer is left after the tail data block.
- */
-int
-tail_fwrite (const Tail *t, FILE *file)
-{
-    TrieIndex   i;
-
-    if (!file_write_int32 (file, TAIL_SIGNATURE) ||
-        !file_write_int32 (file, t->first_free)  ||
-        !file_write_int32 (file, t->num_tails))
-    {
-        return -1;
-    }
-    for (i = 0; i < t->num_tails; i++) {
-        int16   length;
-
-        if (!file_write_int32 (file, t->tails[i].next_free) ||
-            !file_write_int32 (file, t->tails[i].data))
-        {
-            return -1;
-        }
-
-        length = t->tails[i].suffix ? strlen ((const char *)t->tails[i].suffix)
-                                    : 0;
-        if (!file_write_int16 (file, length))
-            return -1;
-        if (length > 0 &&
-            !file_write_chars (file, (char *)t->tails[i].suffix, length))
-        {
-            return -1;
-        }
-    }
-
-    return 0;
 }
 
 

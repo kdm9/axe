@@ -28,7 +28,6 @@
 #include <string.h>
 
 #include "trie.h"
-#include "fileutils.h"
 #include "alpha-map.h"
 #include "alpha-map-private.h"
 #include "darray.h"
@@ -145,76 +144,6 @@ exit_trie_created:
 }
 
 /**
- * @brief Create a new trie by loading from a file
- *
- * @param path  : the path to the file
- *
- * @return a pointer to the created trie, NULL on failure
- *
- * Create a new trie and initialize its contents by loading from the file at
- * given @a path.
- *
- * The created object must be freed with trie_free().
- */
-Trie *
-trie_new_from_file (const char *path)
-{
-    Trie       *trie;
-    FILE       *trie_file;
-
-    trie_file = fopen (path, "r");
-    if (!trie_file)
-        return NULL;
-
-    trie = trie_fread (trie_file);
-    fclose (trie_file);
-    return trie;
-}
-
-/**
- * @brief Create a new trie by reading from an open file
- *
- * @param file  : the handle of the open file
- *
- * @return a pointer to the created trie, NULL on failure
- *
- * Create a new trie and initialize its contents by reading from the open
- * @a file. After reading, the file pointer is left at the end of the trie data.
- * This can be useful for reading embedded trie index as part of a file data.
- *
- * The created object must be freed with trie_free().
- *
- * Available since: 0.2.4
- */
-Trie *
-trie_fread (FILE *file)
-{
-    Trie       *trie;
-
-    trie = (Trie *) malloc (sizeof (Trie));
-    if (!trie)
-        return NULL;
-
-    if (NULL == (trie->alpha_map = alpha_map_fread_bin (file)))
-        goto exit_trie_created;
-    if (NULL == (trie->da   = da_fread (file)))
-        goto exit_alpha_map_created;
-    if (NULL == (trie->tail = tail_fread (file)))
-        goto exit_da_created;
-
-    trie->is_dirty = FALSE;
-    return trie;
-
-exit_da_created:
-    da_free (trie->da);
-exit_alpha_map_created:
-    alpha_map_free (trie->alpha_map);
-exit_trie_created:
-    free (trie);
-    return NULL;
-}
-
-/**
  * @brief Free a trie object
  *
  * @param trie  : the trie object to free
@@ -228,65 +157,6 @@ trie_free (Trie *trie)
     da_free (trie->da);
     tail_free (trie->tail);
     free (trie);
-}
-
-/**
- * @brief Save a trie to file
- *
- * @param trie  : the trie
- *
- * @param path  : the path to the file
- *
- * @return 0 on success, non-zero on failure
- *
- * Create a new file at the given @a path and write @a trie data to it.
- * If @a path already exists, its contents will be replaced.
- */
-int
-trie_save (Trie *trie, const char *path)
-{
-    FILE *file;
-    int   res = 0;
-
-    file = fopen (path, "w+");
-    if (!file)
-        return -1;
-
-    res = trie_fwrite (trie, file);
-    fclose (file);
-    return res;
-}
-
-/**
- * @brief Write trie data to an open file
- *
- * @param trie  : the trie
- *
- * @param file  : the open file
- *
- * @return 0 on success, non-zero on failure
- *
- * Write @a trie data to @a file which is opened for writing.
- * After writing, the file pointer is left at the end of the trie data.
- * This can be useful for embedding trie index as part of a file data.
- *
- * Available since: 0.2.4
- */
-int
-trie_fwrite (Trie *trie, FILE *file)
-{
-    if (alpha_map_fwrite_bin (trie->alpha_map, file) != 0)
-        return -1;
-
-    if (da_fwrite (trie->da, file) != 0)
-        return -1;
-
-    if (tail_fwrite (trie->tail, file) != 0)
-        return -1;
-
-    trie->is_dirty = FALSE;
-
-    return 0;
 }
 
 /**

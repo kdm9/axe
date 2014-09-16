@@ -27,6 +27,7 @@
 #ifndef __TRIEDEFS_H
 #define __TRIEDEFS_H
 
+#include <stdint.h>
 #include <datrie/typedefs.h>
 
 /**
@@ -71,7 +72,7 @@ typedef int32          TrieIndex;
 /**
  * @brief Type of value associated to trie entries
  */
-typedef int32          TrieData;
+typedef intptr_t         TrieData;
 /**
  * @brief Trie error data
  */

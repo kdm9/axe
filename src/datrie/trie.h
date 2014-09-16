@@ -54,8 +54,7 @@ extern "C" {
  * to it before associating it to a trie. And the keys to be added to the trie
  * must be only in such ranges.
  *
- * A new Trie can be created in memory using trie_new(), saved to file using
- * trie_save(), and loaded later with trie_new_from_file().
+ * A new Trie can be created in memory using trie_new()
  * It can even be embeded in another file using trie_fwrite() and read back
  * using trie_fread().
  * After use, Trie objects must be freed using trie_free().
@@ -114,15 +113,7 @@ typedef struct _TrieIterator TrieIterator;
 
 Trie *  trie_new (const AlphaMap *alpha_map);
 
-Trie *  trie_new_from_file (const char *path);
-
-Trie *  trie_fread (FILE *file);
-
 void    trie_free (Trie *trie);
-
-int     trie_save (Trie *trie, const char *path);
-
-int     trie_fwrite (Trie *trie, FILE *file);
 
 Bool    trie_is_dirty (const Trie *trie);
 
