@@ -790,75 +790,6 @@ axe_load_tries(struct axe_config *config)
 }
 
 static inline int
-write_barcoded_read_single(struct axe_output *out, struct qes_seq *seq1,
-                           struct qes_seq *seq2, size_t bcd_len, int trim_r2)
-{
-    int ret = 0;
-
-    if (seq1->seq.l <= bcd_len) {
-        /* Don't write out seqs shorter than the barcode */
-        return 0;
-    }
-    /* Bit of the ol' switcheroo. We keep the seq's char pointers, so we
-       need to switch them back to their orig. values, but don't want to
-       copy. Kludgy, I know. */
-    seq1->seq.s += bcd_len;
-    seq1->seq.l -= bcd_len;
-    seq1->qual.s += bcd_len;
-    seq1->qual.l -= bcd_len;
-    ret = qes_seqfile_write(out->fwd_file, seq1);
-    if (ret < 1) {
-        fprintf(stderr,
-                "[write_read_single] Error: writing to R1 file %s failed\n%s\n",
-                out->fwd_file->qf->path,
-                qes_file_error(out->fwd_file->qf));
-        seq1->seq.s -= bcd_len;
-        seq1->seq.l += bcd_len;
-        seq1->qual.s -= bcd_len;
-        seq1->qual.l += bcd_len;
-        return 1;
-    }
-    seq1->seq.s -= bcd_len;
-    seq1->seq.l += bcd_len;
-    seq1->qual.s -= bcd_len;
-    seq1->qual.l += bcd_len;
-    if (seq2 != NULL) {
-        if (trim_r2) {
-            seq2->seq.s += bcd_len;
-            seq2->seq.l -= bcd_len;
-            seq2->qual.s += bcd_len;
-            seq2->qual.l -= bcd_len;
-        }
-        if (out->mode == READS_INTERLEAVED) {
-            ret = qes_seqfile_write(out->fwd_file, seq2);
-            if (ret < 1) {
-                fprintf(stderr,
-                        "[process_file] Error: writing to il file %s failed\n%s\n",
-                        out->fwd_file->qf->path,
-                        qes_file_error(out->fwd_file->qf));
-                return 1;
-            }
-        } else if (out->mode == READS_PAIRED) {
-            ret = qes_seqfile_write(out->rev_file, seq2);
-            if (ret < 1) {
-                fprintf(stderr,
-                        "[process_file] Error: writing to rev file %s failed\n%s\n",
-                        out->rev_file->qf->path,
-                        qes_file_error(out->rev_file->qf));
-                return 1;
-            }
-        }
-        if (trim_r2) {
-            seq2->seq.s -= bcd_len;
-            seq2->seq.l += bcd_len;
-            seq2->qual.s -= bcd_len;
-            seq2->qual.l += bcd_len;
-        }
-    }
-    return 0;
-}
-
-static inline int
 write_barcoded_read_combo(struct axe_output *out, struct qes_seq *seq1,
                           struct qes_seq *seq2, size_t bcd1_len,
                           size_t bcd2_len)
@@ -947,21 +878,112 @@ increment_reads_print_progress(struct axe_config *config)
                     config->out_mode == READS_SINGLE ? "reads" : "read pairs");
         }
     }
-
 }
+
+static inline int
+process_read_pair_single(struct axe_config *config, struct qes_seq *seq1,
+                        struct qes_seq *seq2)
+{
+    int ret = 0;
+    ssize_t bcd = -1;
+    size_t barcode_pair_index = 0;
+    struct axe_output *outfile = NULL;
+    size_t iii = 0;
+    size_t bcd_len = 0;
+
+    ret = axe_match_read(&bcd, config->fwd_trie, seq1);
+    increment_reads_print_progress(config);
+    if (ret != 0) {
+        /* No match */
+        qes_seqfile_write(config->unknown_output->fwd_file, seq1);
+        if (seq2 != NULL) {
+            if (config->out_mode == READS_INTERLEAVED)
+                qes_seqfile_write(config->unknown_output->fwd_file, seq2);
+            else
+                qes_seqfile_write(config->unknown_output->rev_file, seq2);
+        }
+        config->reads_failed++;
+        return 0;
+    }
+    /* Found a match */
+    config->reads_demultiplexed++;
+    /* FIXME: we need to check bcd doesn't cause segfault */
+    barcode_pair_index = config->barcode_lookup[bcd][0];
+    outfile = config->outputs[barcode_pair_index];
+    bcd_len = config->barcodes[barcode_pair_index]->len1;
+    config->barcodes[bcd]->count++;
+    if (seq1->seq.l <= bcd_len) {
+        /* Don't write out seqs shorter than the barcode */
+        return 0;
+    }
+    /* Bit of the ol' switcheroo. We keep the seq's char pointers, so we need
+     * to switch them back to their orig. values, but don't want to copy.
+     * Kludgy, I know. */
+    seq1->seq.s += bcd_len;
+    seq1->seq.l -= bcd_len;
+    seq1->qual.s += bcd_len;
+    seq1->qual.l -= bcd_len;
+    ret = qes_seqfile_write(outfile->fwd_file, seq1);
+    if (ret < 1) {
+        fprintf(stderr,
+                "[write_read_single] Error: writing to R1 file %s failed\n%s\n",
+                outfile->fwd_file->qf->path,
+                qes_file_error(outfile->fwd_file->qf));
+        seq1->seq.s -= bcd_len;
+        seq1->seq.l += bcd_len;
+        seq1->qual.s -= bcd_len;
+        seq1->qual.l += bcd_len;
+        return 1;
+    }
+    seq1->seq.s -= bcd_len;
+    seq1->seq.l += bcd_len;
+    seq1->qual.s -= bcd_len;
+    seq1->qual.l += bcd_len;
+    /* And do the same with seq2, if we have one */
+    if (seq2 != NULL) {
+        if (config->trim_rev) {
+            seq2->seq.s += bcd_len;
+            seq2->seq.l -= bcd_len;
+            seq2->qual.s += bcd_len;
+            seq2->qual.l -= bcd_len;
+        }
+        if (outfile->mode == READS_INTERLEAVED) {
+            ret = qes_seqfile_write(outfile->fwd_file, seq2);
+            if (ret < 1) {
+                fprintf(stderr,
+                        "[process_file] Error: writing to il file %s failed\n%s\n",
+                        outfile->fwd_file->qf->path,
+                        qes_file_error(outfile->fwd_file->qf));
+                return 1;
+            }
+        } else if (outfile->mode == READS_PAIRED) {
+            ret = qes_seqfile_write(outfile->rev_file, seq2);
+            if (ret < 1) {
+                fprintf(stderr,
+                        "[process_file] Error: writing to rev file %s failed\n%s\n",
+                        outfile->rev_file->qf->path,
+                        qes_file_error(outfile->rev_file->qf));
+                return 1;
+            }
+        }
+        if (config->trim_rev) {
+            seq2->seq.s -= bcd_len;
+            seq2->seq.l += bcd_len;
+            seq2->qual.s -= bcd_len;
+            seq2->qual.l += bcd_len;
+        }
+    }
+    return 0;
+}
+
 
 static int
 process_file_single(struct axe_config *config)
 {
     struct qes_seqfile *fwdsf = NULL;
     struct qes_seqfile *revsf = NULL;
-    size_t barcode_pair_index = 0;
-    struct axe_output *outfile = NULL;
-    ssize_t bcd1 = -1;
-    size_t iii = 0;
     int ret = 0;
-    size_t bcd1_len = 0;
-    int have_error = 0;
+    int retval = -1;
 
     if (!axe_config_ok(config)) {
         fprintf(stderr, "[process_file] Bad config struct\n");
@@ -971,7 +993,7 @@ process_file_single(struct axe_config *config)
     if (fwdsf == NULL) {
         fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
                 config->infiles[0]);
-        goto error;
+        goto exit;
     }
     switch(config->in_mode) {
     case READS_SINGLE:
@@ -985,7 +1007,7 @@ process_file_single(struct axe_config *config)
         if (revsf == NULL) {
             fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
                     config->infiles[1]);
-            goto error;
+            goto exit;
         }
         goto paired;
         break;
@@ -993,100 +1015,37 @@ process_file_single(struct axe_config *config)
     default:
         fprintf(stderr, "[process_file_single] Bad infile mode %i\n",
                 config->in_mode);
-        goto error;
+        goto exit;
         break;
     }
 
 single:
     QES_SEQFILE_ITER_SINGLE_BEGIN(fwdsf, seq, seqlen) {
-        ret = axe_match_read(&bcd1, config->fwd_trie, seq);
-        increment_reads_print_progress(config);
-        if (ret != 0) {
-            /* No match */
-            qes_seqfile_write(config->unknown_output->fwd_file, seq);
-            config->reads_failed++;
-            continue;
-        }
-        config->reads_demultiplexed++;
-        /* Found a match */
-        barcode_pair_index = config->barcode_lookup[bcd1][0];
-        outfile = config->outputs[barcode_pair_index];
-        bcd1_len = config->barcodes[barcode_pair_index]->len1;
-        config->barcodes[bcd1]->count++;
-        ret = write_barcoded_read_single(outfile, seq, NULL, bcd1_len, 0);
-        if (ret != 0) {
-            have_error = 1;
-            break;
-        }
+        ret = process_read_pair_single(config, seq, NULL);
     }
     QES_SEQFILE_ITER_SINGLE_END(seq);
-    if (!have_error) goto clean_exit;
-    else goto error;
+    retval = ret == 0 ? 0 : 1;
+    goto exit;
 
 interleaved:
     QES_SEQFILE_ITER_INTERLEAVED_BEGIN(fwdsf, seq1, seq2, seqlen1, seqlen2) {
-        ret = axe_match_read(&bcd1, config->fwd_trie, seq1);
-        increment_reads_print_progress(config);
-        if (ret != 0) {
-            /* No match */
-            qes_seqfile_write(config->unknown_output->fwd_file, seq1);
-            qes_seqfile_write(config->unknown_output->fwd_file, seq2);
-            config->reads_failed++;
-            continue;
-        }
-        /* Found a match */
-        config->reads_demultiplexed++;
-        barcode_pair_index = config->barcode_lookup[bcd1][0];
-        outfile = config->outputs[barcode_pair_index];
-        bcd1_len = config->barcodes[barcode_pair_index]->len1;
-        config->barcodes[bcd1]->count++;
-        ret = write_barcoded_read_single(outfile, seq1, seq2, bcd1_len,
-                                         config->trim_rev);
-        if (ret != 0) {
-            have_error = 1;
-            break;
-        }
+        ret = process_read_pair_single(config, seq1, seq2);
     }
     QES_SEQFILE_ITER_INTERLEAVED_END(seq1, seq2);
-    if (!have_error) goto clean_exit;
-    else goto error;
+    retval = ret == 0 ? 0 : 1;
+    goto exit;
 
 paired:
     QES_SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2) {
-        ret = axe_match_read(&bcd1, config->fwd_trie, seq1);
-        increment_reads_print_progress(config);
-        if (ret != 0) {
-            /* No match */
-            qes_seqfile_write(config->unknown_output->fwd_file, seq1);
-            qes_seqfile_write(config->unknown_output->rev_file, seq2);
-            config->reads_failed++;
-            continue;
-        }
-        /* Found a match */
-        config->reads_demultiplexed++;
-        barcode_pair_index = config->barcode_lookup[bcd1][0];
-        outfile = config->outputs[barcode_pair_index];
-        bcd1_len = config->barcodes[barcode_pair_index]->len1;
-        config->barcodes[bcd1]->count++;
-        ret = write_barcoded_read_single(outfile, seq1, seq2, bcd1_len,
-                                         config->trim_rev);
-        if (ret != 0) {
-            have_error = 1;
-            break;
-        }
+        ret = process_read_pair_single(config, seq1, seq2);
     }
     QES_SEQFILE_ITER_PAIRED_END(seq1, seq2);
-    if (!have_error) goto clean_exit;
-    else goto error;
-
-clean_exit:
+    retval = ret == 0 ? 0 : 1;
+    goto exit;
+exit:
     qes_seqfile_destroy(fwdsf);
     qes_seqfile_destroy(revsf);
-    return 0;
-error:
-    qes_seqfile_destroy(fwdsf);
-    qes_seqfile_destroy(revsf);
-    return 1;
+    return retval;
 }
 
 
