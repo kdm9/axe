@@ -208,7 +208,11 @@ void axe_output_destroy_(struct axe_output *output);
 
 
 struct axe_trie *axe_trie_create(void);
-
+extern int axe_trie_get(struct axe_trie *trie, const char *str,
+                        intptr_t *data);
+extern int axe_trie_add(struct axe_trie *trie, const char *str,
+                        intptr_t data);
+extern int axe_trie_delete(struct axe_trie *trie, const char *str);
 /*===  FUNCTION  ============================================================*
 Name:           axe_trie_destroy
 Paramters:      struct axe_trie *: trie struct on heap to destroy.
@@ -222,13 +226,13 @@ void axe_trie_destroy_(struct axe_trie *trie);
     trie = NULL;                                                            \
     STMT_END
 
+
 struct axe_barcode *axe_barcode_create(void);
 void axe_barcode_destroy_(struct axe_barcode *barcode);
 #define axe_barcode_destroy(barcode) STMT_BEGIN                             \
     axe_barcode_destroy_(barcode);                                          \
     barcode = NULL;                                                         \
     STMT_END
-
 
 
 /* This is the processing pipeline. These functions should be run in this
@@ -243,11 +247,9 @@ int axe_write_table(const struct axe_config *config);
 int axe_print_summary(const struct axe_config *config, FILE *stream);
 
 /* Libraries or inner functions */
-int axe_trie_add(struct axe_trie *trie, const char *seq, size_t len);
 extern int axe_match_read(intptr_t *value, struct axe_trie *trie,
                           const struct qes_seq *seq);
 int product(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
-int combinations(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
 char **hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
                           unsigned int dist, int keep_original);
 

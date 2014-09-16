@@ -334,7 +334,7 @@ setup_barcode_lookup_combo(struct axe_config *config)
     size_t n_barcodes_1 = 0; /* R1 barcodes */
     size_t n_barcodes_2 = 0;
     size_t iii = 0;
-    int tmp = 0;
+    intptr_t tmp = 0;
     int ret = -1;
     int res = 0;
     size_t bcd1 = 0;
@@ -357,10 +357,10 @@ setup_barcode_lookup_combo(struct axe_config *config)
             fprintf(stderr, "[setup_lookup] Bad barcode at %zu\n", iii);
             goto error;
         }
-        if (!trie_retrieve(seq1_trie->trie, this_barcode->seq1, &tmp)) {
+        if (!axe_trie_get(seq1_trie, this_barcode->seq1, &tmp)) {
             axe_trie_add(seq1_trie, this_barcode->seq1, n_barcodes_1++);
         }
-        if (!trie_retrieve(seq2_trie->trie, this_barcode->seq2, &tmp)) {
+        if (!axe_trie_get(seq2_trie, this_barcode->seq2, &tmp)) {
             axe_trie_add(seq2_trie, this_barcode->seq2, n_barcodes_2++);
         }
     }
@@ -379,11 +379,11 @@ setup_barcode_lookup_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_barcode = config->barcodes[iii];
         /* already checked barcode above */
-        res = trie_retrieve(seq1_trie->trie, this_barcode->seq1,
-                            (int32_t *)(&bcd1));
+        res = axe_trie_get(seq1_trie, this_barcode->seq1,
+                            (intptr_t *)(&bcd1));
         if (!res) goto error;
-        res = trie_retrieve(seq2_trie->trie, this_barcode->seq2,
-                            (int32_t *)(&bcd2));
+        res = axe_trie_get(seq2_trie, this_barcode->seq2,
+                            (intptr_t *)(&bcd2));
         if (!res) goto error;
         config->barcode_lookup[bcd1][bcd2] = iii;
     }
@@ -414,8 +414,6 @@ axe_setup_barcode_lookup(struct axe_config *config)
 int
 axe_make_tries(struct axe_config *config)
 {
-    size_t iii = 0;
-
     if (!axe_config_ok(config)) {
         return -1;
     }
@@ -479,7 +477,7 @@ load_tries_combo(struct axe_config *config)
     size_t jjj = 0;
     size_t mmm = 0;
     struct axe_barcode *this_bcd = NULL;
-    int tmp = 0;
+    intptr_t tmp = 0;
 
     if (!axe_config_ok(config)) {
         fprintf(stderr, "[load_tries] Bad config\n");
@@ -497,7 +495,7 @@ load_tries_combo(struct axe_config *config)
         /* Either lookup the index of the first read in the barcode table, or
          * insert this barcode into the table, storing its index.
          * Note the NOT here. */
-        if (!trie_retrieve(config->fwd_trie->trie, this_bcd->seq1, &tmp)) {
+        if (!axe_trie_get(config->fwd_trie, this_bcd->seq1, &tmp)) {
             ret = axe_trie_add(config->fwd_trie, this_bcd->seq1, ++bcd1);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
@@ -525,8 +523,7 @@ load_tries_combo(struct axe_config *config)
                                     "[%s] warning: Will only match to %dmm\n",
                                     __func__, (int)jjj - 1);
                         }
-                        trie_delete(config->fwd_trie->trie,
-                                    mutated[mmm]);
+                        axe_trie_delete(config->fwd_trie, mutated[mmm]);
                         qes_free(mutated[mmm]);
                         continue;
                     }
@@ -545,7 +542,7 @@ load_tries_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         /* Likewise for the reverse read index */
-        if (!trie_retrieve(config->rev_trie->trie, this_bcd->seq2, &tmp)) {
+        if (!axe_trie_get(config->rev_trie, this_bcd->seq2, &tmp)) {
             ret = axe_trie_add(config->rev_trie, this_bcd->seq2, ++bcd2);
             if (ret != 0) {
                 fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
@@ -611,7 +608,7 @@ load_tries_single(struct axe_config *config)
     size_t iii = 0;
     size_t jjj = 0;
     size_t mmm = 0;
-    int tmp = 0;
+    intptr_t tmp = 0;
     int retval = -1;
     struct axe_barcode *this_bcd = NULL;
 
@@ -629,7 +626,7 @@ load_tries_single(struct axe_config *config)
         /* Either lookup the index of the first read in the barcode table, or
          * insert this barcode into the table, storing its index.
          * Note the NOT here. */
-        if (!trie_retrieve(config->fwd_trie->trie, this_bcd->seq1, &tmp)) {
+        if (!axe_trie_get(config->fwd_trie, this_bcd->seq1, &tmp)) {
             ret = axe_trie_add(config->fwd_trie, this_bcd->seq1, (int)iii);
             if (ret != 0) {
                 fprintf(stderr,
@@ -904,7 +901,6 @@ process_read_pair_single(struct axe_config *config, struct qes_seq *seq1,
     ssize_t bcd = -1;
     size_t barcode_pair_index = 0;
     struct axe_output *outfile = NULL;
-    size_t iii = 0;
     size_t bcd_len = 0;
 
     ret = axe_match_read(&bcd, config->fwd_trie, seq1);
@@ -1072,7 +1068,6 @@ process_read_pair_combo(struct axe_config *config, struct qes_seq *seq1,
     ssize_t barcode_pair_index = 0;
     intptr_t bcd1 = -1;
     intptr_t bcd2 = -1;
-    size_t iii = 0;
     int r1_ret = 0;
     int r2_ret = 0;
     size_t bcd1_len = 0;
@@ -1345,17 +1340,25 @@ axe_trie_destroy_(struct axe_trie *trie)
     }
 }
 
-int
-axe_trie_get (struct axe_trie *trie, const char *seq, uintptr_t *data)
+inline int
+axe_trie_get(struct axe_trie *trie, const char *str, intptr_t *data)
 {
-    if (!axe_trie_ok(trie) || seq == NULL) return -1;
+    if (!axe_trie_ok(trie) || str == NULL) return -1;
+    return trie_retrieve(trie->trie, str, data);
 }
 
-int
-axe_trie_add (struct axe_trie *trie, const char *seq, uintptr_t data)
+inline int
+axe_trie_delete(struct axe_trie *trie, const char *str)
 {
-    if (!axe_trie_ok(trie) || seq == NULL) return -1;
-    if (trie_store_if_absent(trie->trie, seq, data)) {
+    if (!axe_trie_ok(trie) || str == NULL) return -1;
+    return trie_delete(trie->trie, str);
+}
+
+inline int
+axe_trie_add(struct axe_trie *trie, const char *str, intptr_t data)
+{
+    if (!axe_trie_ok(trie) || str == NULL) return -1;
+    if (trie_store_if_absent(trie->trie, str, data)) {
         return 0;
     }
     return 1;
@@ -1368,7 +1371,6 @@ axe_match_read (ssize_t *value, struct axe_trie *trie,
     TrieState *trie_iter = NULL;
     TrieState *last_good_state = NULL;
     size_t seq_pos = 0;
-    int res = 0;
 
     /* value is set to -1 on anything bad happening including failed lookup */
     if (value == NULL || !axe_trie_ok(trie) || !qes_seq_ok(seq)) {
@@ -1388,7 +1390,7 @@ axe_match_read (ssize_t *value, struct axe_trie *trie,
     }
     /* Consume seq until we can't */
     do {
-        res = trie_state_walk(trie_iter, seq->seq.s[seq_pos]);
+        trie_state_walk(trie_iter, seq->seq.s[seq_pos]);
         if (trie_state_is_terminal(trie_iter)) {
             if (last_good_state != NULL) {
                 trie_state_free(last_good_state);
