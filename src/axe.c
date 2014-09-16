@@ -197,6 +197,7 @@ read_barcode_combo(char *line)
     if (barcode->id == NULL) goto error;
     barcode->idlen = strnlen(id, 100);
     return barcode;
+
 error:
     axe_barcode_destroy(barcode);
     return NULL;
@@ -230,6 +231,7 @@ read_barcode_single(char *line)
     if (barcode->id == NULL) goto error;
     barcode->idlen = strnlen(id, 100);
     return barcode;
+
 error:
     axe_barcode_destroy(barcode);
     return NULL;
@@ -254,6 +256,7 @@ axe_read_barcodes(struct axe_config *config)
     barcodes = qes_calloc(n_barcodes_alloced, sizeof(*barcodes));
     qf = qes_file_open(config->barcode_file, "r");
     line = qes_malloc(linesz);
+
     while ((linelen = qes_file_readline_realloc(qf, &line, &linesz)) > 0) {
         /* Skip an optional header line */
         if (strncmp(line, "Barcode", 7) == 0 || \
@@ -283,6 +286,7 @@ axe_read_barcodes(struct axe_config *config)
         /* Add the barcode to the array */
         barcodes[n_barcode_pairs++] = this_barcode;
     }
+
     /* Save the array to the config struct */
     config->barcodes = barcodes;
     config->n_barcode_pairs = n_barcode_pairs;
@@ -293,6 +297,7 @@ axe_read_barcodes(struct axe_config *config)
                 nowstr());
     }
     return 0;
+
 error:
     if (barcodes != NULL) {
         for (iii = 0; iii < n_barcode_pairs; iii++) {
@@ -390,6 +395,7 @@ exit:
     axe_trie_destroy(seq1_trie);
     axe_trie_destroy(seq2_trie);
     return ret;
+
 error:
     ret = 1;
     goto exit;
@@ -651,11 +657,7 @@ load_tries_single(struct axe_config *config)
                 goto exit;
             }
             for (mmm = 0; mmm < num_mutated; mmm++) {
-#if 1
                 ret = axe_trie_add(config->fwd_trie, mutated[mmm], iii);
-#else
-                ret = axe_trie_add(config->fwd_trie, mutated[mmm], iii);
-#endif
                 if (ret != 0) {
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
@@ -759,6 +761,7 @@ axe_make_outputs(struct axe_config *config)
     qes_free(file_ext);
     qes_free(zmode);
     return 0;
+
 error:
     qes_free(name_fwd);
     qes_free(name_rev);
@@ -1290,7 +1293,7 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
     result = qes_malloc(results_alloced * sizeof(*result));
     alphabet_indicies = qes_calloc(dist, sizeof(*alphabet_indicies));
     mut_idx_comb = gsl_combination_calloc(len, dist);
-    do{
+    do {
         while ((alpha_ret = product(n_letters, dist, alphabet_indicies,
                                     !alpha_ret)) == 1) {
             tmp = strndup(str, len+1);
