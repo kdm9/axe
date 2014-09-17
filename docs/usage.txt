@@ -1,5 +1,5 @@
 USAGE:
-axe [-mzc2pt] -b -u [-U] (-f [-r] | -i) (-F [-R] | -I)
+axe [-mzc2pt] -b (-f [-r] | -i) (-F [-R] | -I)
 axe -h
 axe -v
 
@@ -17,8 +17,6 @@ OPTIONS:
     -R, --rev-out	Output reverse read prefix. [file]
     -i, --ilfq-in	Input interleaved paired reads. [file]
     -I, --ilfq-out	Output interleaved paired reads prefix. [file]
-    -u, --unknown-r1	Unknown barcode forward/interleaved read file. [file]
-    -U, --unknown-r2	Unknown barcode reverse read file. [file]
     -t, --table-file	Output a summary table of demultiplexing statistics to file. [file]
     -h, --help		Print this usage plus additional help.
     -V, --version	Print version string.

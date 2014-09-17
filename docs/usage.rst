@@ -21,33 +21,28 @@ paired reads (one file, with R1 and R2 as consecutive reads). If single end
 reads are inputted, they must be output as single end reads. If either paired or
 interleaved paired reads are read, they can be output as either paired reads or
 interleaved paired reads. This applies to both successfully de-multiplexed reads
-and reads that could not be de-multiplexed. The output mode for non-barcoded
-reads (``-u``/``-U``) must use the same scheme as that for successfully
-de-multiplexed reads (``-F``, ``-R`` or ``-I``).
+and reads that could not be de-multiplexed.
 
 The ``-z`` flag can be used to specify that outputs should be compressed using
 gzip compression. The ``-z`` flag takes an integer argument between 0 (the
-default) and 9, where 0 indicates plain text output (gzopen mode "wT"), and 1-9
-indicate that the respective compression level should be used, where 1 is
+default) and 9, where 0 indicates plain text output (``gzopen`` mode "wT"), and
+1-9 indicate that the respective compression level should be used, where 1 is
 fastest and 9 is most compact.
 
-The output flags for successfully
-de-multiplexed reads are prefixes, which are used to generate the output file
+The output flags should be prefixes that are used to generate the output file
 name based on the barcode's (or barcode pair's) ID. The names are generated as:
 ``prefix`` + ``_`` + ``barcode ID`` + ``_`` + ``read number`` + ``.extension``.
-The read number is omitted unless the paired read file scheme is used. The
-extension is "fastq" unless the interleaved paired read output scheme is used,
-in which case it is "ilfq". ``.gz`` is appended to the extension if the ``-z``
-flag is used.
+The output file for reads that could not be demultiplexed is ``prefix`` + ``_``
++ ``barcode ID`` + ``_`` + ``read number`` + ``.extension``.  The read number
+is omitted unless the paired read file scheme is used, and is "il" for
+interleaved output. The extension is "fastq"; ``.gz`` is appended to the
+extension if the ``-z`` flag is used.
 
 The corresponding CLI flags are:
  - ``-f`` and ``-F``: Single end or paired R1 file input and output
    respectively.
  - ``-r`` and ``-R``: Paired R2 file input and output.
  - ``-i`` and ``-I``: Interleaved paired input and output.
- - ``-u``: Single read, interleaved paired read or paired R1 read
-   "non-barcoded" read file.
- - ``-U``: Paired R2 read non-barcoded read file.
 
 The barcode file
 ----------------
@@ -57,9 +52,11 @@ mandatory, and is always supplied using the ``-b`` command line flag. The exact
 format is dependent on barcoding mode, and is described further in the sections
 below. If a header is present, the header line must start with either
 `Barcode` or ``barcode``, or it will be interpreted as a barcode line, leading
-to a parsing error. Please ensure that the software used to produce the barcode
-uses ASCII encoding, and does not insert a Byte-order Mark (BoM) as many text
-editors can silently use alternate encoding schemes. I recommend the use of
+to a parsing error. Any line starting with ';' or '#' is ignored, allowing
+comments to be added in line with barcodes. Please ensure that the software
+used to produce the barcode uses ASCII encoding, and does not insert a
+Byte-order Mark (BoM) as many text editors can silently use Unicode-based
+encoding schemes. I recommend the use of
 `LibreOffice Calc <www.libreoffice.org>`_ (part of a free and open source
 office suite) to generate barcode tables; Microsoft Excel can also be used.
 
@@ -99,12 +96,13 @@ these two barcodes. The respective  barcodes are trimmed from both reads; the
 ``-2`` command line flag has no effect in combinatorial barcode mode.
 
 In combinatorial barcode mode, the barcode file has three columns:
-``Barcode1``, ``Barcode2`` and ``ID``. Barcodes can be duplicated within the
-forward and reverse barcodes, but barcode pairs must be unique combinations.
+``Barcode1``, ``Barcode2`` and ``ID``. Individual barcodes can occur many times
+within the forward and reverse barcodes, but barcode pairs must be unique
+combinations.
 
-The Demultipexing Stats File
-----------------------------
+The Demultipexing Statistics File
+---------------------------------
 
 The ``-t`` option allows the output of per-sample read counts to a
-tab-seperated file. The file will have a header describing its format, and
+tab-separated file. The file will have a header describing its format, and
 includes a line for unbarcoded reads.
