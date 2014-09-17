@@ -32,7 +32,7 @@ In short, on Linux, get the dependencies (see below), and:
     git clone --recursive https://github.com/kdmurray91/axe.git axe
     cd axe
     mkdir -p build && cd build
-    cmake -DCMAKE_BUILD_TYPE=Release ..
+    cmake ..
     make
     sudo make install
 
@@ -40,11 +40,11 @@ To install to a prefix, as you would with `./configure --prefix` with the
 autotools build system, please use the following cmake command in place of the
 one above:
 
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/path/to/your/prefix ..
+    cmake -DCMAKE_INSTALL_PREFIX=/path/to/your/prefix ..
 
 e.g.:
 
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ ..
+    cmake -DCMAKE_INSTALL_PREFIX=~/ ..
 
 For me, using `~/` as the prefix will install `axe` under `/home/kevin/bin` on
 GNU/Linux, and (if I had one) `/Users/kevin/bin` on Mac OSX.It's also wise to
@@ -52,11 +52,17 @@ use `make install` not `sudo make install` when installing to a home directory.
 
 ###Dependencies:
 
+- libgsl: (The GNU scientific library). Install with `sudo apt-get install
+  libgsl0-dev` or `brew install gsl`. This dependency will be removed soon, as
+  the relevant functions will be bundled with `axe`. If this dependency stops
+  you installing `axe`, please pester me and I will make these changes
+  immediately, removing the dependency.
 - cmake. This is installable via `sudo apt-get install cmake` on Debian based
   systems, or `brew install cmake` using homebrew on OS X.
 - zlib version >= 1.2.5. On Debian, use the package `zlib1g-dev`.
 - libqes, tinytest and libdatrie (bundled in source, if you used
-  `git clone --recursive` or an installation tarball)
+  `git clone --recursive` or an installation tarball. Otherwise, run
+  `git submodule update --init`).
 
 You'll possibly need to install zlib to your chosen prefix (e.g. `~/`) on
 supercomputers, which often have very old versions of zlib. To do so:
@@ -69,7 +75,7 @@ supercomputers, which often have very old versions of zlib. To do so:
 
 And then, use the following cmake command, assuming your prefix is `~/`:
 
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/ -DZLIB_ROOT=~/ ..
+    cmake -DCMAKE_INSTALL_PREFIX=~/ -DZLIB_ROOT=~/ ..
 
 
 Usage:
