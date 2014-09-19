@@ -44,17 +44,17 @@ void *    trie_string_get_val_rw (TrieString *ts);
 
 void      trie_string_clear (TrieString *ts);
 
-Bool      trie_string_copy (TrieString *dst, const TrieString *src);
+bool      trie_string_copy (TrieString *dst, const TrieString *src);
 
-Bool      trie_string_append (TrieString *dst, const TrieString *src);
+bool      trie_string_append (TrieString *dst, const TrieString *src);
 
-Bool      trie_string_append_string (TrieString *ts, const TrieChar *str);
+bool      trie_string_append_string (TrieString *ts, const TrieChar *str);
 
-Bool      trie_string_append_char (TrieString *ts, TrieChar tc);
+bool      trie_string_append_char (TrieString *ts, TrieChar tc);
 
-Bool      trie_string_terminate (TrieString *ts);
+bool      trie_string_terminate (TrieString *ts);
 
-Bool      trie_string_cut_last (TrieString *ts);
+bool      trie_string_cut_last (TrieString *ts);
 
 
 #endif  /* __TRIE_STRING_H */

@@ -46,13 +46,13 @@ void     tail_free (Tail *t);
 
 const TrieChar *    tail_get_suffix (const Tail *t, TrieIndex index);
 
-Bool     tail_set_suffix (Tail *t, TrieIndex index, const TrieChar *suffix);
+bool     tail_set_suffix (Tail *t, TrieIndex index, const TrieChar *suffix);
 
 TrieIndex tail_add_suffix (Tail *t, const TrieChar *suffix);
 
 TrieData tail_get_data (const Tail *t, TrieIndex index);
 
-Bool     tail_set_data (Tail *t, TrieIndex index, TrieData data);
+bool     tail_set_data (Tail *t, TrieIndex index, TrieData data);
 
 void     tail_delete (Tail *t, TrieIndex index);
 
@@ -62,7 +62,7 @@ int      tail_walk_str  (const Tail      *t,
                          const TrieChar  *str,
                          int              len);
 
-Bool     tail_walk_char (const Tail      *t,
+bool     tail_walk_char (const Tail      *t,
                          TrieIndex        s,
                          short           *suffix_idx,
                          TrieChar         c);
@@ -81,7 +81,7 @@ Bool     tail_walk_char (const Tail      *t,
  * position @a suffix_idx of entry @a s of the tail data @a t.
  */
 /*
-Bool     tail_is_walkable_char (Tail            *t,
+bool     tail_is_walkable_char (Tail            *t,
                                 TrieIndex        s,
                                 short            suffix_idx,
                                 const TrieChar   c);

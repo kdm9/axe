@@ -158,7 +158,7 @@ tail_get_suffix (const Tail *t, TrieIndex index)
  *
  * Set suffix of existing entry of given @a index in tail.
  */
-Bool
+bool
 tail_set_suffix (Tail *t, TrieIndex index, const TrieChar *suffix)
 {
     index -= TAIL_START_BLOCKNO;
@@ -173,9 +173,9 @@ tail_set_suffix (Tail *t, TrieIndex index, const TrieChar *suffix)
             free (t->tails[index].suffix);
         t->tails[index].suffix = tmp;
 
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 /**
@@ -276,15 +276,15 @@ tail_get_data (const Tail *t, TrieIndex index)
  *
  * Set data associated to suffix entry @a index in tail data.
  */
-Bool
+bool
 tail_set_data (Tail *t, TrieIndex index, TrieData data)
 {
     index -= TAIL_START_BLOCKNO;
     if (index < t->num_tails) {
         t->tails[index].data = data;
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 /**
@@ -330,7 +330,7 @@ tail_walk_str  (const Tail      *t,
 
     suffix = tail_get_suffix (t, s);
     if (!suffix)
-        return FALSE;
+        return false;
 
     i = 0; j = *suffix_idx;
     while (i < len) {
@@ -358,10 +358,10 @@ tail_walk_str  (const Tail      *t,
  *
  * Walk in the tail data @a t at entry @a s, from given character position
  * @a *suffix_idx, using given character @a c. If the walk is successful,
- * it returns TRUE, and @a *suffix_idx is updated to the next character.
- * Otherwise, it returns FALSE, and @a *suffix_idx is left unchanged.
+ * it returns true, and @a *suffix_idx is updated to the next character.
+ * Otherwise, it returns false, and @a *suffix_idx is left unchanged.
  */
-Bool
+bool
 tail_walk_char (const Tail      *t,
                 TrieIndex        s,
                 short           *suffix_idx,
@@ -372,15 +372,15 @@ tail_walk_char (const Tail      *t,
 
     suffix = tail_get_suffix (t, s);
     if (!suffix)
-        return FALSE;
+        return false;
 
     suffix_char = suffix[*suffix_idx];
     if (suffix_char == c) {
         if (0 != suffix_char)
             ++*suffix_idx;
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 /*

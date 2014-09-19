@@ -43,17 +43,17 @@ void *    dstring_get_val_rw (DString *ds);
 
 void      dstring_clear (DString *ds);
 
-Bool      dstring_copy (DString *dst, const DString *src);
+bool      dstring_copy (DString *dst, const DString *src);
 
-Bool      dstring_append (DString *dst, const DString *src);
+bool      dstring_append (DString *dst, const DString *src);
 
-Bool      dstring_append_string (DString *ds, const void *data, int len);
+bool      dstring_append_string (DString *ds, const void *data, int len);
 
-Bool      dstring_append_char (DString *ds, const void *data);
+bool      dstring_append_char (DString *ds, const void *data);
 
-Bool      dstring_terminate (DString *ds);
+bool      dstring_terminate (DString *ds);
 
-Bool      dstring_cut_last (DString *ds);
+bool      dstring_cut_last (DString *ds);
 
 #endif  /* __DSTRING_H */
 

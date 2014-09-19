@@ -68,7 +68,7 @@ void       da_set_base (DArray *d, TrieIndex s, TrieIndex val);
 
 void       da_set_check (DArray *d, TrieIndex s, TrieIndex val);
 
-Bool       da_walk (const DArray *d, TrieIndex *s, TrieChar c);
+bool       da_walk (const DArray *d, TrieIndex *s, TrieChar c);
 
 Symbols *  da_output_symbols  (const DArray *d, TrieIndex s);
 
@@ -84,7 +84,7 @@ Symbols *  da_output_symbols  (const DArray *d, TrieIndex s);
  * Test if there is a transition from state @a s with input character @a c.
  */
 /*
-Bool       da_is_walkable (DArray *d, TrieIndex s, TrieChar c);
+bool       da_is_walkable (DArray *d, TrieIndex s, TrieChar c);
 */
 #define    da_is_walkable(d,s,c) \
     (da_get_check ((d), da_get_base ((d), (s)) + (c)) == (s))

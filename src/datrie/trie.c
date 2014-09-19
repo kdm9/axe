@@ -42,7 +42,7 @@ struct _Trie {
     DArray     *da;
     Tail       *tail;
 
-    Bool        is_dirty;
+    bool        is_dirty;
 };
 
 /**
@@ -78,17 +78,17 @@ static TrieState * trie_state_new (const Trie *trie,
                                    short       suffix_idx,
                                    short       is_suffix);
 
-static Bool        trie_store_conditionally (Trie            *trie,
+static bool        trie_store_conditionally (Trie            *trie,
                                              const AlphaChar *key,
                                              TrieData         data,
-                                             Bool             is_overwrite);
+                                             bool             is_overwrite);
 
-static Bool        trie_branch_in_branch (Trie           *trie,
+static bool        trie_branch_in_branch (Trie           *trie,
                                           TrieIndex       sep_node,
                                           const TrieChar *suffix,
                                           TrieData        data);
 
-static Bool        trie_branch_in_tail   (Trie           *trie,
+static bool        trie_branch_in_tail   (Trie           *trie,
                                           TrieIndex       sep_node,
                                           const TrieChar *suffix,
                                           TrieData        data);
@@ -131,7 +131,7 @@ trie_new (const AlphaMap *alpha_map)
     if (!trie->tail)
         goto exit_da_created;
 
-    trie->is_dirty = TRUE;
+    trie->is_dirty = true;
     return trie;
 
 exit_da_created:
@@ -164,12 +164,12 @@ trie_free (Trie *trie)
  *
  * @param trie  : the trie object
  *
- * @return TRUE if there are pending changes, FALSE otherwise
+ * @return true if there are pending changes, false otherwise
  *
  * Check if the @a trie is dirty with some pending changes and needs saving
  * to synchronize with the file.
  */
-Bool
+bool
 trie_is_dirty (const Trie *trie)
 {
     return trie->is_dirty;
@@ -193,7 +193,7 @@ trie_is_dirty (const Trie *trie)
  * if @a key is found and @a o_data is not NULL, @a *o_data is set
  * to the data associated to @a key.
  */
-Bool
+bool
 trie_retrieve (const Trie *trie, const AlphaChar *key, TrieData *o_data)
 {
     TrieIndex        s;
@@ -205,9 +205,9 @@ trie_retrieve (const Trie *trie, const AlphaChar *key, TrieData *o_data)
     for (p = key; !trie_da_is_separate (trie->da, s); p++) {
         TrieIndex tc = alpha_map_char_to_trie (trie->alpha_map, *p);
         if (TRIE_INDEX_MAX == tc)
-            return FALSE;
+            return false;
         if (!da_walk (trie->da, &s, (TrieChar) tc))
-            return FALSE;
+            return false;
         if (0 == *p)
             break;
     }
@@ -218,9 +218,9 @@ trie_retrieve (const Trie *trie, const AlphaChar *key, TrieData *o_data)
     for ( ; ; p++) {
         TrieIndex tc = alpha_map_char_to_trie (trie->alpha_map, *p);
         if (TRIE_INDEX_MAX == tc)
-            return FALSE;
+            return false;
         if (!tail_walk_char (trie->tail, s, &suffix_idx, (TrieChar) tc))
-            return FALSE;
+            return false;
         if (0 == *p)
             break;
     }
@@ -228,7 +228,7 @@ trie_retrieve (const Trie *trie, const AlphaChar *key, TrieData *o_data)
     /* found, set the val and return */
     if (o_data)
         *o_data = tail_get_data (trie->tail, s);
-    return TRUE;
+    return true;
 }
 
 /**
@@ -244,10 +244,10 @@ trie_retrieve (const Trie *trie, const AlphaChar *key, TrieData *o_data)
  * exist in @a trie, it will be appended. If it does, its current data will
  * be overwritten.
  */
-Bool
+bool
 trie_store (Trie *trie, const AlphaChar *key, TrieData data)
 {
-    return trie_store_conditionally (trie, key, data, TRUE);
+    return trie_store_conditionally (trie, key, data, true);
 }
 
 /**
@@ -268,17 +268,17 @@ trie_store (Trie *trie, const AlphaChar *key, TrieData data)
  *
  * Available since: 0.2.4
  */
-Bool
+bool
 trie_store_if_absent (Trie *trie, const AlphaChar *key, TrieData data)
 {
-    return trie_store_conditionally (trie, key, data, FALSE);
+    return trie_store_conditionally (trie, key, data, false);
 }
 
-static Bool
+static bool
 trie_store_conditionally (Trie            *trie,
                           const AlphaChar *key,
                           TrieData         data,
-                          Bool             is_overwrite)
+                          bool             is_overwrite)
 {
     TrieIndex        s, t;
     short            suffix_idx;
@@ -289,14 +289,14 @@ trie_store_conditionally (Trie            *trie,
     for (p = key; !trie_da_is_separate (trie->da, s); p++) {
         TrieIndex tc = alpha_map_char_to_trie (trie->alpha_map, *p);
         if (TRIE_INDEX_MAX == tc)
-            return FALSE;
+            return false;
         if (!da_walk (trie->da, &s, (TrieChar) tc)) {
             TrieChar *key_str;
-            Bool      res;
+            bool      res;
 
             key_str = alpha_map_char_to_trie_str (trie->alpha_map, p);
             if (!key_str)
-                return FALSE;
+                return false;
             res = trie_branch_in_branch (trie, s, key_str, data);
             free (key_str);
 
@@ -313,14 +313,14 @@ trie_store_conditionally (Trie            *trie,
     for ( ; ; p++) {
         TrieIndex tc = alpha_map_char_to_trie (trie->alpha_map, *p);
         if (TRIE_INDEX_MAX == tc)
-            return FALSE;
+            return false;
         if (!tail_walk_char (trie->tail, t, &suffix_idx, (TrieChar) tc)) {
             TrieChar *tail_str;
-            Bool      res;
+            bool      res;
 
             tail_str = alpha_map_char_to_trie_str (trie->alpha_map, sep);
             if (!tail_str)
-                return FALSE;
+                return false;
             res = trie_branch_in_tail (trie, s, tail_str, data);
             free (tail_str);
 
@@ -332,14 +332,14 @@ trie_store_conditionally (Trie            *trie,
 
     /* duplicated key, overwrite val if flagged */
     if (!is_overwrite) {
-        return FALSE;
+        return false;
     }
     tail_set_data (trie->tail, t, data);
-    trie->is_dirty = TRUE;
-    return TRUE;
+    trie->is_dirty = true;
+    return true;
 }
 
-static Bool
+static bool
 trie_branch_in_branch (Trie           *trie,
                        TrieIndex       sep_node,
                        const TrieChar *suffix,
@@ -349,7 +349,7 @@ trie_branch_in_branch (Trie           *trie,
 
     new_da = da_insert_branch (trie->da, sep_node, *suffix);
     if (TRIE_INDEX_ERROR == new_da)
-        return FALSE;
+        return false;
 
     if ('\0' != *suffix)
         ++suffix;
@@ -358,11 +358,11 @@ trie_branch_in_branch (Trie           *trie,
     tail_set_data (trie->tail, new_tail, data);
     trie_da_set_tail_index (trie->da, new_da, new_tail);
 
-    trie->is_dirty = TRUE;
-    return TRUE;
+    trie->is_dirty = true;
+    return true;
 }
 
-static Bool
+static bool
 trie_branch_in_tail   (Trie           *trie,
                        TrieIndex       sep_node,
                        const TrieChar *suffix,
@@ -375,7 +375,7 @@ trie_branch_in_tail   (Trie           *trie,
     old_tail = trie_da_get_tail_index (trie->da, sep_node);
     old_suffix = tail_get_suffix (trie->tail, old_tail);
     if (!old_suffix)
-        return FALSE;
+        return false;
 
     for (p = old_suffix, s = sep_node; *p == *suffix; p++, suffix++) {
         TrieIndex t = da_insert_branch (trie->da, s, *p);
@@ -400,7 +400,7 @@ fail:
     /* failed, undo previous insertions and return error */
     da_prune_upto (trie->da, sep_node, s);
     trie_da_set_tail_index (trie->da, sep_node, old_tail);
-    return FALSE;
+    return false;
 }
 
 /**
@@ -413,7 +413,7 @@ fail:
  *
  * Delete an entry for the given @a key from @a trie.
  */
-Bool
+bool
 trie_delete (Trie *trie, const AlphaChar *key)
 {
     TrieIndex        s, t;
@@ -425,9 +425,9 @@ trie_delete (Trie *trie, const AlphaChar *key)
     for (p = key; !trie_da_is_separate (trie->da, s); p++) {
         TrieIndex tc = alpha_map_char_to_trie (trie->alpha_map, *p);
         if (TRIE_INDEX_MAX == tc)
-            return FALSE;
+            return false;
         if (!da_walk (trie->da, &s, (TrieChar) tc))
-            return FALSE;
+            return false;
         if (0 == *p)
             break;
     }
@@ -438,9 +438,9 @@ trie_delete (Trie *trie, const AlphaChar *key)
     for ( ; ; p++) {
         TrieIndex tc = alpha_map_char_to_trie (trie->alpha_map, *p);
         if (TRIE_INDEX_MAX == tc)
-            return FALSE;
+            return false;
         if (!tail_walk_char (trie->tail, t, &suffix_idx, (TrieChar) tc))
-            return FALSE;
+            return false;
         if (0 == *p)
             break;
     }
@@ -449,8 +449,8 @@ trie_delete (Trie *trie, const AlphaChar *key)
     da_set_base (trie->da, s, TRIE_INDEX_ERROR);
     da_prune (trie->da, s);
 
-    trie->is_dirty = TRUE;
-    return TRUE;
+    trie->is_dirty = true;
+    return true;
 }
 
 /**
@@ -464,18 +464,18 @@ trie_delete (Trie *trie, const AlphaChar *key)
  *
  * Enumerate all entries in trie. For each entry, the user-supplied
  * @a enum_func callback function is called, with the entry key and data.
- * Returning FALSE from such callback will stop enumeration and return FALSE.
+ * Returning false from such callback will stop enumeration and return false.
  */
-Bool
+bool
 trie_enumerate (const Trie *trie, TrieEnumFunc enum_func, void *user_data)
 {
     TrieState      *root;
     TrieIterator   *iter;
-    Bool            cont = TRUE;
+    bool            cont = true;
 
     root = trie_root (trie);
     if (!root)
-        return FALSE;
+        return false;
 
     iter = trie_iterator_new (root);
     if (!iter)
@@ -495,7 +495,7 @@ trie_enumerate (const Trie *trie, TrieEnumFunc enum_func, void *user_data)
 
 exit_root_created:
     trie_state_free (root);
-    return FALSE;
+    return false;
 }
 
 
@@ -517,7 +517,7 @@ exit_root_created:
 TrieState *
 trie_root (const Trie *trie)
 {
-    return trie_state_new (trie, da_get_root (trie->da), 0, FALSE);
+    return trie_state_new (trie, da_get_root (trie->da), 0, false);
 }
 
 /*----------------*
@@ -601,7 +601,7 @@ void
 trie_state_rewind (TrieState *s)
 {
     s->index      = da_get_root (s->trie->da);
-    s->is_suffix  = FALSE;
+    s->is_suffix  = false;
 }
 
 /**
@@ -615,22 +615,22 @@ trie_state_rewind (TrieState *s)
  * Walk the trie stepwise, using a given character @a c.
  * On return, the state @a s is updated to the new state if successfully walked.
  */
-Bool
+bool
 trie_state_walk (TrieState *s, AlphaChar c)
 {
     TrieIndex tc = alpha_map_char_to_trie (s->trie->alpha_map, c);
     if (TRIE_INDEX_MAX == tc)
-        return FALSE;
+        return false;
 
     if (!s->is_suffix) {
-        Bool ret;
+        bool ret;
 
         ret = da_walk (s->trie->da, &s->index, (TrieChar) tc);
 
         if (ret && trie_da_is_separate (s->trie->da, s->index)) {
             s->index = trie_da_get_tail_index (s->trie->da, s->index);
             s->suffix_idx = 0;
-            s->is_suffix = TRUE;
+            s->is_suffix = true;
         }
 
         return ret;
@@ -650,12 +650,12 @@ trie_state_walk (TrieState *s, AlphaChar c)
  *
  * Test if there is a transition from state @a s with input character @a c.
  */
-Bool
+bool
 trie_state_is_walkable (const TrieState *s, AlphaChar c)
 {
     TrieIndex tc = alpha_map_char_to_trie (s->trie->alpha_map, c);
     if (TRIE_INDEX_MAX == tc)
-        return FALSE;
+        return false;
 
     if (!s->is_suffix)
         return da_is_walkable (s->trie->da, s->index, (TrieChar) tc);
@@ -720,7 +720,7 @@ trie_state_walkable_chars (const TrieState  *s,
  * Check if the given state is in a single path, that is, there is no other
  * branch from it to leaf.
  */
-Bool
+bool
 trie_state_is_single (const TrieState *s)
 {
     return s->is_suffix;
@@ -815,7 +815,7 @@ trie_iterator_free (TrieIterator *iter)
  *
  * Available since: 0.2.6
  */
-Bool
+bool
 trie_iterator_next (TrieIterator *iter)
 {
     TrieState *s = iter->state;
@@ -827,29 +827,29 @@ trie_iterator_next (TrieIterator *iter)
 
         /* for tail state, we are already at the only entry */
         if (s->is_suffix)
-            return TRUE;
+            return true;
 
         iter->key = trie_string_new (20);
         sep = da_first_separate (s->trie->da, s->index, iter->key);
         if (TRIE_INDEX_ERROR == sep)
-            return FALSE;
+            return false;
 
         s->index = sep;
-        return TRUE;
+        return true;
     }
 
     /* no next entry for tail state */
     if (s->is_suffix)
-        return FALSE;
+        return false;
 
     /* iter->state is a separate node */
     sep = da_next_separate (s->trie->da, iter->root->index, s->index,
                             iter->key);
     if (TRIE_INDEX_ERROR == sep)
-        return FALSE;
+        return false;
 
     s->index = sep;
-    return TRUE;
+    return true;
 }
 
 /**

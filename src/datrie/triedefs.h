@@ -38,7 +38,7 @@
 /**
  * @brief Alphabet character type for use as input/output strings of trie keys
  */
-typedef char         AlphaChar;
+typedef char AlphaChar;
 
 /**
  * @brief Error value for alphabet character
@@ -49,34 +49,34 @@ typedef char         AlphaChar;
  * @brief Raw character type mapped into packed set from AlphaChar,
  * for use in actual trie transition calculations
  */
-typedef unsigned char  TrieChar;
+typedef uint8_t TrieChar;
 /**
  * @brief Trie terminator character
  */
-#define TRIE_CHAR_TERM    '\0'
-#define TRIE_CHAR_MAX     255
+#define TRIE_CHAR_TERM    ((TrieChar) 0)
+#define TRIE_CHAR_MAX     UINT8_MAX
 
 /**
  * @brief Type of index into Trie double-array and tail structures
  */
-typedef int32          TrieIndex;
+typedef int32_t TrieIndex;
 /**
  * @brief Trie error index
  */
-#define TRIE_INDEX_ERROR  0
+#define TRIE_INDEX_ERROR  ((TrieIndex) 0)
 /**
  * @brief Maximum trie index value
  */
-#define TRIE_INDEX_MAX    0x7fffffff
+#define TRIE_INDEX_MAX  INT32_MAX
 
 /**
  * @brief Type of value associated to trie entries
  */
-typedef intptr_t         TrieData;
+typedef intptr_t TrieData;
 /**
  * @brief Trie error data
  */
-#define TRIE_DATA_ERROR  -1
+#define TRIE_DATA_ERROR  ((TrieData) -1)
 
 #endif  /* __TRIEDEFS_H */
 

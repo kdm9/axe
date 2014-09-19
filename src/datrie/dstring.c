@@ -85,45 +85,45 @@ dstring_clear (DString *ds)
     ds->str_len = 0;
 }
 
-static Bool
+static bool
 dstring_ensure_space (DString *ds, int size)
 {
     if (ds->alloc_size < size) {
         int   re_size = MAX_VAL (ds->alloc_size * 2, size);
         void *re_ptr = realloc (ds->val, re_size);
         if (!re_ptr)
-            return FALSE;
+            return false;
         ds->val = re_ptr;
         ds->alloc_size = re_size;
     }
 
-    return TRUE;
+    return true;
 }
 
-Bool
+bool
 dstring_copy (DString *dst, const DString *src)
 {
     if (!dstring_ensure_space (dst, (src->str_len + 1) * src->char_size))
-        return FALSE;
+        return false;
 
     memcpy (dst->val, src->val, (src->str_len + 1) * src->char_size);
 
     dst->char_size = src->char_size;
     dst->str_len = src->str_len;
 
-    return TRUE;
+    return true;
 }
 
-Bool
+bool
 dstring_append (DString *dst, const DString *src)
 {
     if (dst->char_size != src->char_size)
-        return FALSE;
+        return false;
 
     if (!dstring_ensure_space (dst, (dst->str_len + src->str_len + 1)
                                     * dst->char_size))
     {
-        return FALSE;
+        return false;
     }
 
     memcpy ((char *)dst->val + (dst->char_size * dst->str_len), src->val,
@@ -131,57 +131,57 @@ dstring_append (DString *dst, const DString *src)
 
     dst->str_len += src->str_len;
 
-    return TRUE;
+    return true;
 }
 
-Bool
+bool
 dstring_append_string (DString *ds, const void *data, int len)
 {
     if (!dstring_ensure_space (ds, (ds->str_len + len + 1) * ds->char_size))
-        return FALSE;
+        return false;
 
     memcpy ((char  *)ds->val + (ds->char_size * ds->str_len), data,
             ds->char_size * len);
 
     ds->str_len += len;
 
-    return TRUE;
+    return true;
 }
 
-Bool
+bool
 dstring_append_char (DString *ds, const void *data)
 {
     if (!dstring_ensure_space (ds, (ds->str_len + 2) * ds->char_size))
-        return FALSE;
+        return false;
 
     memcpy ((char *)ds->val + (ds->char_size * ds->str_len), data,
             ds->char_size);
 
     ds->str_len++;
 
-    return TRUE;
+    return true;
 }
 
-Bool
+bool
 dstring_terminate (DString *ds)
 {
     if (!dstring_ensure_space (ds, (ds->str_len + 2) * ds->char_size))
-        return FALSE;
+        return false;
 
     memset ((char *)ds->val + (ds->char_size * ds->str_len), 0, ds->char_size);
 
-    return TRUE;
+    return true;
 }
 
-Bool
+bool
 dstring_cut_last (DString *ds)
 {
     if (0 == ds->str_len)
-        return FALSE;
+        return false;
 
     ds->str_len--;
 
-    return TRUE;
+    return true;
 }
 
 /*

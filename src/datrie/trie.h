@@ -90,9 +90,9 @@ typedef struct _Trie   Trie;
  * @param data : the data of the entry
  * @param user_data : the user-supplied data on enumerate call
  *
- * @return TRUE to continue enumeration, FALSE to stop
+ * @return true to continue enumeration, false to stop
  */
-typedef Bool (*TrieEnumFunc) (const AlphaChar  *key,
+typedef bool (*TrieEnumFunc) (const AlphaChar  *key,
                               TrieData          key_data,
                               void             *user_data);
 
@@ -115,24 +115,24 @@ Trie *  trie_new (const AlphaMap *alpha_map);
 
 void    trie_free (Trie *trie);
 
-Bool    trie_is_dirty (const Trie *trie);
+bool    trie_is_dirty (const Trie *trie);
 
 
 /*------------------------------*
  *   GENERAL QUERY OPERATIONS   *
  *------------------------------*/
 
-Bool    trie_retrieve (const Trie      *trie,
+bool    trie_retrieve (const Trie      *trie,
                        const AlphaChar *key,
                        TrieData        *o_data);
 
-Bool    trie_store (Trie *trie, const AlphaChar *key, TrieData data);
+bool    trie_store (Trie *trie, const AlphaChar *key, TrieData data);
 
-Bool    trie_store_if_absent (Trie *trie, const AlphaChar *key, TrieData data);
+bool    trie_store_if_absent (Trie *trie, const AlphaChar *key, TrieData data);
 
-Bool    trie_delete (Trie *trie, const AlphaChar *key);
+bool    trie_delete (Trie *trie, const AlphaChar *key);
 
-Bool    trie_enumerate (const Trie     *trie,
+bool    trie_enumerate (const Trie     *trie,
                         TrieEnumFunc    enum_func,
                         void           *user_data);
 
@@ -156,9 +156,9 @@ void      trie_state_free (TrieState *s);
 
 void      trie_state_rewind (TrieState *s);
 
-Bool      trie_state_walk (TrieState *s, AlphaChar c);
+bool      trie_state_walk (TrieState *s, AlphaChar c);
 
-Bool      trie_state_is_walkable (const TrieState *s, AlphaChar c);
+bool      trie_state_is_walkable (const TrieState *s, AlphaChar c);
 
 int       trie_state_walkable_chars (const TrieState  *s,
                                      AlphaChar         chars[],
@@ -176,7 +176,7 @@ int       trie_state_walkable_chars (const TrieState  *s,
  */
 #define   trie_state_is_terminal(s) trie_state_is_walkable((s),TRIE_CHAR_TERM)
 
-Bool      trie_state_is_single (const TrieState *s);
+bool      trie_state_is_single (const TrieState *s);
 
 /**
  * @brief Check for leaf state
@@ -202,7 +202,7 @@ TrieIterator *  trie_iterator_new (TrieState *s);
 
 void            trie_iterator_free (TrieIterator *iter);
 
-Bool            trie_iterator_next (TrieIterator *iter);
+bool            trie_iterator_next (TrieIterator *iter);
 
 AlphaChar *     trie_iterator_get_key (const TrieIterator *iter);
 

@@ -72,38 +72,38 @@ trie_string_clear (TrieString *ts)
     dstring_clear ((DString *)ts);
 }
 
-Bool
+bool
 trie_string_copy (TrieString *dst, const TrieString *src)
 {
     return dstring_copy ((DString *)dst, (const DString *)src);
 }
 
-Bool
+bool
 trie_string_append (TrieString *dst, const TrieString *src)
 {
     return dstring_append ((DString *)dst, (const DString *)src);
 }
 
-Bool
+bool
 trie_string_append_string (TrieString *ts, const TrieChar *str)
 {
     return dstring_append_string ((DString *)ts,
                                   str, strlen ((const char *)str));
 }
 
-Bool
+bool
 trie_string_append_char (TrieString *ts, TrieChar tc)
 {
     return dstring_append_char ((DString *)ts, &tc);
 }
 
-Bool
+bool
 trie_string_terminate (TrieString *ts)
 {
     return dstring_terminate ((DString *)ts);
 }
 
-Bool
+bool
 trie_string_cut_last (TrieString *ts)
 {
     return dstring_cut_last ((DString *)ts);
