@@ -14,30 +14,9 @@ IF (NOT CMAKE_BUILD_TYPE)
 ENDIF()
 
 # git versioning
-INCLUDE(GetGitRevisionDescription)
-get_git_head_revision(rev hash)
-git_get_exact_tag(tag)
+INCLUDE(GitSemVer)
 
-IF("${tag}")
-	SET(VERSION "${tag}")
-ELSE()
-	git_describe(gitdesc "--always")
-	#special test, tags starting with 0 fail if you just to "if (x)"
-	if(NOT "${gitdesc}" MATCHES "^-")
-		STRING (REGEX REPLACE "-" " " gdlist ${gitdesc})
-		SEPARATE_ARGUMENTS(gdlist)
-		LIST(GET gdlist 0 tag)
-		LIST(GET gdlist 1 cmts_since_tag)
-		SET(VERSION "${tag}-${cmts_since_tag}-dirty")
-	ELSE()
-		SET(VERSION "dirty")
-	ENDIF()
-ENDIF()
-IF (NOT "${hash}" STREQUAL "")
-	STRING(SUBSTRING ${hash} 0 7 hash)
-	set(VERSION "${VERSION}+git.${hash}")
-ENDIF()
-
+GetGitSemVer(VERSION)
 MESSAGE(STATUS "${CMAKE_BUILD_TYPE} build of axe version: ${VERSION}")
 
 
