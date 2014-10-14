@@ -103,6 +103,10 @@ Publication
 
 A publication is coming soon, if the reviewer gods decide to smile upon us.
 
+Versioning
+----------
+
+We use Semantic Versioning. See [semver.org](http://semver.org)
 
 LICENSE
 -------
