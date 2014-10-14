@@ -1335,7 +1335,10 @@ void
 axe_trie_destroy_(struct axe_trie *trie)
 {
     if (trie != NULL) {
-        trie_free(trie->trie);
+        /* trie_free doesn't check for null, so we better */
+        if (trie->trie != NULL) {
+            trie_free(trie->trie);
+        }
         qes_free(trie);
     }
 }
@@ -1449,8 +1452,8 @@ axe_write_table(const struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         if (config->match_combo) {
-            fprintf(tab_fp, "%s\t%s\t%s\t%" PRIu64 "\n", this_bcd->seq1, this_bcd->seq2,
-                    this_bcd->id, this_bcd->count);
+            fprintf(tab_fp, "%s\t%s\t%s\t%" PRIu64 "\n", this_bcd->seq1,
+                    this_bcd->seq2, this_bcd->id, this_bcd->count);
         } else {
             fprintf(tab_fp, "%s\t%s\t%" PRIu64 "\n", this_bcd->seq1,
                     this_bcd->id, this_bcd->count);

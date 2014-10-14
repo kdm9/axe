@@ -76,7 +76,7 @@ SET(AXEWRN "${AXEWRN} -Wmissing-declarations -Wredundant-decls -Wnested-externs"
 SET(AXEWRN "${AXEWRN} -Wbad-function-cast -Wswitch-enum -Winit-self")
 SET(AXEWRN "${AXEWRN} -Wmissing-field-initializers -Wdeclaration-after-statement")
 SET(AXEWRN "${AXEWRN} -Wold-style-definition -Waddress -Wmissing-noreturn ")
-SET(AXEWRN "${AXEWRN} -Wstrict-overflow=1 -Wextra -Warray-bounds -Wall")
+SET(AXEWRN "${AXEWRN} -Wstrict-overflow=1 -Wextra -Warray-bounds -Wall -D_FORTIFY_SOURCE=2")
 
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -DAXE_VERSION=\\\"${VERSION}\\\"")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${AXEWRN}")
