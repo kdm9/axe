@@ -7,6 +7,7 @@ AXE
 [![Build Status](https://travis-ci.org/kdmurray91/axe.svg?branch=dev)](https://travis-ci.org/kdmurray91/axe)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/2666/badge.svg)](https://scan.coverity.com/projects/2666)
 [![Coverage Status](https://img.shields.io/coveralls/kdmurray91/axe.svg)](https://coveralls.io/r/kdmurray91/axe?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/axe-demultiplexer/badge/?version=latest)](https://readthedocs.org/projects/axe-demultiplexer/?badge=latest)
 
 AXE very rapidly selects the optimal barcode present in a sequence read, even
 in the presence of sequencing errors. The algorithm is able to handle
