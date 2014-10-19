@@ -33,10 +33,10 @@ The output flags should be prefixes that are used to generate the output file
 name based on the barcode's (or barcode pair's) ID. The names are generated as:
 ``prefix`` + ``_`` + ``barcode ID`` + ``_`` + ``read number`` + ``.extension``.
 The output file for reads that could not be demultiplexed is ``prefix`` + ``_``
-+ ``unknown`` + ``_`` + ``read number`` + ``.extension``.  The read number
-is omitted unless the paired read file scheme is used, and is "il" for
-interleaved output. The extension is "fastq"; ``.gz`` is appended to the
-extension if the ``-z`` flag is used.
++ ``unknown`` + ``_`` + ``read number`` + ``.extension``.  The read number is
+omitted unless the paired read file scheme is used, and is "il" for interleaved
+output. The extension is "fastq"; ".gz" is appended to the extension if the
+``-z`` flag is used.
 
 The corresponding CLI flags are:
  - ``-f`` and ``-F``: Single end or paired R1 file input and output
