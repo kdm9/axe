@@ -354,7 +354,7 @@ setup_barcode_lookup_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_barcode = config->barcodes[iii];
         if (!axe_barcode_ok(this_barcode)) {
-            fprintf(stderr, "[setup_lookup] Bad barcode at %zu\n", iii);
+            fprintf(stderr, "[setup_lookup] Bad barcode at %" PRIu64 "\n", iii);
             goto error;
         }
         if (!axe_trie_get(seq1_trie, this_barcode->seq1, &tmp)) {
@@ -488,7 +488,7 @@ load_tries_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         if (!axe_barcode_ok(this_bcd)) {
-            fprintf(stderr, "[load_tries] Bad R1 barcode at %zu\n", iii);
+            fprintf(stderr, "[load_tries] Bad R1 barcode at %" PRIu64 "\n", iii);
             ret = -1;
             goto exit;
         }
@@ -498,7 +498,7 @@ load_tries_combo(struct axe_config *config)
         if (!axe_trie_get(config->fwd_trie, this_bcd->seq1, &tmp)) {
             ret = axe_trie_add(config->fwd_trie, this_bcd->seq1, ++bcd1);
             if (ret != 0) {
-                fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
+                fprintf(stderr, "ERROR: Could not load barcode %s into trie %" PRIu64 "\n",
                         this_bcd->seq1, iii);
                 ret = 1;
                 goto exit;
@@ -545,7 +545,7 @@ load_tries_combo(struct axe_config *config)
         if (!axe_trie_get(config->rev_trie, this_bcd->seq2, &tmp)) {
             ret = axe_trie_add(config->rev_trie, this_bcd->seq2, ++bcd2);
             if (ret != 0) {
-                fprintf(stderr, "ERROR: Could not load barcode %s into trie %zu\n",
+                fprintf(stderr, "ERROR: Could not load barcode %s into trie %" PRIu64 "\n",
                         this_bcd->seq2, iii);
                 retval = 1;
                 goto exit;
@@ -620,7 +620,7 @@ load_tries_single(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         if (!axe_barcode_ok(this_bcd)) {
-            fprintf(stderr, "[load_tries] Bad barcode at %zu\n", iii);
+            fprintf(stderr, "[load_tries] Bad barcode at %" PRIu64 "\n", iii);
             return -1;
         }
         /* Either lookup the index of the first read in the barcode table, or
@@ -630,7 +630,7 @@ load_tries_single(struct axe_config *config)
             ret = axe_trie_add(config->fwd_trie, this_bcd->seq1, (int)iii);
             if (ret != 0) {
                 fprintf(stderr,
-                        "ERROR: Could not load barcode %s into trie %zu\n",
+                        "ERROR: Could not load barcode %s into trie %" PRIu64 "\n",
                         this_bcd->seq1, iii);
                 return 1;
             }

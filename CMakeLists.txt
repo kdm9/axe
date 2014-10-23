@@ -24,6 +24,9 @@ MESSAGE(STATUS "${CMAKE_BUILD_TYPE} build of axe version: ${VERSION}")
 ## Find Packages and Headers ##
 ###############################
 
+INCLUDE(CheckSymbolExists)
+CHECK_SYMBOL_EXISTS(getline stdio.h HAVE_GETLINE)
+CHECK_SYMBOL_EXISTS(strndup string.h HAVE_STRNDUP)
 FIND_PACKAGE(ZLIB 1.2.5 REQUIRED)
 FIND_PACKAGE(GSL 1.5 REQUIRED)
 SET(AXE_DEPENDS_LIBS
