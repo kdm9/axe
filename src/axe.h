@@ -147,8 +147,7 @@ axe_output_ok(const struct axe_output *output)
     return 1;
 }
 
-#if 0
-/* #ifndef NDEBUG */
+#ifndef NDEBUG
 #define TBD_DEBUG_LOG(x) STMT_BEGIN fprintf(stderr, x); STMT_END
 #else
 #define TBD_DEBUG_LOG(x) (void)(x);
