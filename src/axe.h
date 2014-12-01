@@ -148,9 +148,9 @@ axe_output_ok(const struct axe_output *output)
 }
 
 #ifndef NDEBUG
-#define TBD_DEBUG_LOG(x) STMT_BEGIN fprintf(stderr, x); STMT_END
+#define AXE_DEBUG_LOG(x) STMT_BEGIN fprintf(stderr, x); STMT_END
 #else
-#define TBD_DEBUG_LOG(x) (void)(x);
+#define AXE_DEBUG_LOG(x) (void)(x);
 #endif
 
 

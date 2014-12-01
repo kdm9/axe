@@ -344,7 +344,7 @@ main (int argc, char * const *argv)
         goto end;
     }
     ret = parse_args(config, argc, argv);
-    TBD_DEBUG_LOG("[main] CLI args parsed\n");
+    AXE_DEBUG_LOG("[main] CLI args parsed\n");
     if (ret != 0) {
         print_usage();
         if (ret == 2) {
@@ -353,50 +353,50 @@ main (int argc, char * const *argv)
         goto end;
     }
     ret = axe_read_barcodes(config);
-    TBD_DEBUG_LOG("[main] axe_read_barcodes done\n");
+    AXE_DEBUG_LOG("[main] axe_read_barcodes done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: axe_read_barcodes returned %i\n", ret);
         goto end;
     }
     ret = axe_setup_barcode_lookup(config);
-    TBD_DEBUG_LOG("[main] axe_setup_barcode_lookup done\n");
+    AXE_DEBUG_LOG("[main] axe_setup_barcode_lookup done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: axe_setup_barcode_lookup returned %i\n",
                 ret);
         goto end;
     }
     ret = axe_make_tries(config);
-    TBD_DEBUG_LOG("[main] axe_make_tries done\n");
+    AXE_DEBUG_LOG("[main] axe_make_tries done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: axe_make_tries returned %i\n", ret);
         goto end;
     }
     ret = axe_load_tries(config);
-    TBD_DEBUG_LOG("[main] axe_load_tries done\n");
+    AXE_DEBUG_LOG("[main] axe_load_tries done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: axe_load_tries returned %i\n", ret);
         goto end;
     }
     ret = axe_make_outputs(config);
-    TBD_DEBUG_LOG("[main] axe_make_outputs done\n");
+    AXE_DEBUG_LOG("[main] axe_make_outputs done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: axe_make_outputs returned %i\n", ret);
         goto end;
     }
     ret = axe_process_file(config);
-    TBD_DEBUG_LOG("[main] axe_process_file done\n");
+    AXE_DEBUG_LOG("[main] axe_process_file done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: axe_process_file returned %i\n", ret);
         goto end;
     }
     ret = axe_print_summary(config, stderr);
-    TBD_DEBUG_LOG("[main] axe_print_summary done\n");
+    AXE_DEBUG_LOG("[main] axe_print_summary done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: axe_print_summary returned %i\n", ret);
         goto end;
     }
     ret = axe_write_table(config);
-    TBD_DEBUG_LOG("[main] axe_write_table done\n");
+    AXE_DEBUG_LOG("[main] axe_write_table done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: axe_write_table returned %i\n", ret);
         goto end;
