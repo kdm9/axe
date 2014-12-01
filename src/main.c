@@ -122,7 +122,7 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
         goto error;
     }
     /* Set some sane defaults */
-    /* Most things will default to 0, and we calloc the config struct, so we
+    /* Most things will default to 0 as we `calloc` the config struct, so we
      * don't need to explicity set them. */
     config->mismatches = 1;
     config->verbosity = 0;
@@ -356,6 +356,8 @@ main (int argc, char * const *argv)
     AXE_DEBUG_LOG("[main] axe_read_barcodes done\n");
     if (ret != 0) {
         fprintf(stderr, "[main] ERROR: axe_read_barcodes returned %i\n", ret);
+        fprintf(stderr, "\tThis indicates that the barcode file is invalid.\n");
+        fprintf(stderr, "\tPlease check that it conforms to the layout described in the help message\n");
         goto end;
     }
     ret = axe_setup_barcode_lookup(config);
