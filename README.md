@@ -4,10 +4,15 @@ AXE
 > De-multiplex NGS reads using trie data structures. It's fast, and made of tries!
 
 [![DOI](https://zenodo.org/badge/6357/kdmurray91/axe.png)](https://zenodo.org/record/12278)
-[![Build Status](https://travis-ci.org/kdmurray91/axe.svg?branch=dev)](https://travis-ci.org/kdmurray91/axe)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/2666/badge.svg)](https://scan.coverity.com/projects/2666)
 [![Coverage Status](https://img.shields.io/coveralls/kdmurray91/axe.svg)](https://coveralls.io/r/kdmurray91/axe?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/axe-demultiplexer/badge/?version=latest)](https://readthedocs.org/projects/axe-demultiplexer/?badge=latest)
+
+###Tests:
+
+- TravisCI: [![Build Status](https://travis-ci.org/kdmurray91/axe.svg?branch=dev)](https://travis-ci.org/kdmurray91/axe)
+- Jenkins GNU/Linux [![Build Status](http://biojenkins.anu.edu.au/job/axe/badge/icon)](http://biojenkins.anu.edu.au/job/axe/)
+- Jenkins MinGW [![Build Status](http://biojenkins.anu.edu.au/job/axe-mingw/badge/icon)](http://biojenkins.anu.edu.au/job/axe-mingw/)
 
 AXE very rapidly selects the optimal barcode present in a sequence read, even
 in the presence of sequencing errors. The algorithm is able to handle
