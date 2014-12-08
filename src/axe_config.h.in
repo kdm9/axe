@@ -1,0 +1,22 @@
+/*
+ * ============================================================================
+ *
+ *       Filename:  axe_config.h.in
+ *
+ *    Description:  Define various things from CMake.
+ *
+ *        Created:  15/09/14 14:09:59
+ *        License:  GPLv3+
+ *       Compiler:  gcc, clang
+ *
+ *         Author:  Kevin Murray, spam@kdmurray.id.au
+ *
+ * ============================================================================
+ */
+
+#ifndef AXE_CONFIG_H
+#define AXE_CONFIG_H
+
+#define AXE_VERSION "${AXE_VERSION}"
+
+#endif /* AXE_CONFIG_H */

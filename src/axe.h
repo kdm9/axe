@@ -30,6 +30,7 @@
 
 #include "datrie/trie.h"
 #include "datrie/alpha-map.h"
+#include "axe_config.h"
 
 /* General rules:
  *  Most functions are declared as `int X(...);`. These functions return:
