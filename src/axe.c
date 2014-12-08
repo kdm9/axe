@@ -809,51 +809,51 @@ write_barcoded_read_combo(struct axe_output *out, struct qes_seq *seq1,
 {
     int ret = 0;
 
-    if (seq1->seq.l <= bcd1_len) {
+    if (seq1->seq.len <= bcd1_len) {
         /* Truncate seqs to N */
-        seq1->seq.s[0] = 'N';
-        seq1->seq.s[1] = '\0';
-        seq1->seq.l = 1;
+        seq1->seq.str[0] = 'N';
+        seq1->seq.str[1] = '\0';
+        seq1->seq.len = 1;
         /* Keep first qual 'base' */
-        seq1->qual.s[1] = '\0';
-        seq1->qual.l = 1;
+        seq1->qual.str[1] = '\0';
+        seq1->qual.len = 1;
     }
-    if (seq2->seq.l <= bcd2_len) {
+    if (seq2->seq.len <= bcd2_len) {
         /* Truncate seqs to N */
-        seq2->seq.s[0] = 'N';
-        seq2->seq.s[1] = '\0';
-        seq2->seq.l = 1;
+        seq2->seq.str[0] = 'N';
+        seq2->seq.str[1] = '\0';
+        seq2->seq.len = 1;
         /* Keep first qual 'base' */
-        seq2->qual.s[1] = '\0';
-        seq2->qual.l = 1;
+        seq2->qual.str[1] = '\0';
+        seq2->qual.len = 1;
     }
     /* Bit of the ol' switcheroo. We keep the seq's char pointers, so we
        need to switch them back to their orig. values, but don't want to
        copy. Kludgy, I know. */
-    seq1->seq.s += bcd1_len;
-    seq1->seq.l -= bcd1_len;
-    seq1->qual.s += bcd1_len;
-    seq1->qual.l -= bcd1_len;
+    seq1->seq.str += bcd1_len;
+    seq1->seq.len -= bcd1_len;
+    seq1->qual.str += bcd1_len;
+    seq1->qual.len -= bcd1_len;
     ret = qes_seqfile_write(out->fwd_file, seq1);
     if (ret < 1) {
         fprintf(stderr,
                 "[process_file] Error: writing to fwd file %s failed\n%s\n",
                 out->fwd_file->qf->path,
                 qes_file_error(out->fwd_file->qf));
-        seq1->seq.s -= bcd1_len;
-        seq1->seq.l += bcd1_len;
-        seq1->qual.s -= bcd1_len;
-        seq1->qual.l += bcd1_len;
+        seq1->seq.str -= bcd1_len;
+        seq1->seq.len += bcd1_len;
+        seq1->qual.str -= bcd1_len;
+        seq1->qual.len += bcd1_len;
         return 1;
     }
-    seq1->seq.s -= bcd1_len;
-    seq1->seq.l += bcd1_len;
-    seq1->qual.s -= bcd1_len;
-    seq1->qual.l += bcd1_len;
-    seq2->seq.s += bcd2_len;
-    seq2->seq.l -= bcd2_len;
-    seq2->qual.s += bcd2_len;
-    seq2->qual.l -= bcd2_len;
+    seq1->seq.str -= bcd1_len;
+    seq1->seq.len += bcd1_len;
+    seq1->qual.str -= bcd1_len;
+    seq1->qual.len += bcd1_len;
+    seq2->seq.str += bcd2_len;
+    seq2->seq.len -= bcd2_len;
+    seq2->qual.str += bcd2_len;
+    seq2->qual.len -= bcd2_len;
     if (out->mode == READS_INTERLEAVED) {
         ret = qes_seqfile_write(out->fwd_file, seq2);
         if (ret < 1) {
@@ -873,10 +873,10 @@ write_barcoded_read_combo(struct axe_output *out, struct qes_seq *seq1,
             return 1;
         }
     }
-    seq2->seq.s -= bcd2_len;
-    seq2->seq.l += bcd2_len;
-    seq2->qual.s -= bcd2_len;
-    seq2->qual.l += bcd2_len;
+    seq2->seq.str -= bcd2_len;
+    seq2->seq.len += bcd2_len;
+    seq2->qual.str -= bcd2_len;
+    seq2->qual.len += bcd2_len;
     return 0;
 }
 
@@ -924,40 +924,40 @@ process_read_pair_single(struct axe_config *config, struct qes_seq *seq1,
     outfile = config->outputs[barcode_pair_index];
     bcd_len = config->barcodes[barcode_pair_index]->len1;
     config->barcodes[bcd]->count++;
-    if (seq1->seq.l <= bcd_len) {
+    if (seq1->seq.len <= bcd_len) {
         /* Don't write out seqs shorter than the barcode */
         return 0;
     }
     /* Bit of the ol' switcheroo. We keep the seq's char pointers, so we need
      * to switch them back to their orig. values, but don't want to copy.
      * Kludgy, I know. */
-    seq1->seq.s += bcd_len;
-    seq1->seq.l -= bcd_len;
-    seq1->qual.s += bcd_len;
-    seq1->qual.l -= bcd_len;
+    seq1->seq.str += bcd_len;
+    seq1->seq.len -= bcd_len;
+    seq1->qual.str += bcd_len;
+    seq1->qual.len -= bcd_len;
     ret = qes_seqfile_write(outfile->fwd_file, seq1);
     if (ret < 1) {
         fprintf(stderr,
                 "[write_read_single] Error: writing to R1 file %s failed\n%s\n",
                 outfile->fwd_file->qf->path,
                 qes_file_error(outfile->fwd_file->qf));
-        seq1->seq.s -= bcd_len;
-        seq1->seq.l += bcd_len;
-        seq1->qual.s -= bcd_len;
-        seq1->qual.l += bcd_len;
+        seq1->seq.str -= bcd_len;
+        seq1->seq.len += bcd_len;
+        seq1->qual.str -= bcd_len;
+        seq1->qual.len += bcd_len;
         return 1;
     }
-    seq1->seq.s -= bcd_len;
-    seq1->seq.l += bcd_len;
-    seq1->qual.s -= bcd_len;
-    seq1->qual.l += bcd_len;
+    seq1->seq.str -= bcd_len;
+    seq1->seq.len += bcd_len;
+    seq1->qual.str -= bcd_len;
+    seq1->qual.len += bcd_len;
     /* And do the same with seq2, if we have one */
     if (seq2 != NULL) {
         if (config->trim_rev) {
-            seq2->seq.s += bcd_len;
-            seq2->seq.l -= bcd_len;
-            seq2->qual.s += bcd_len;
-            seq2->qual.l -= bcd_len;
+            seq2->seq.str += bcd_len;
+            seq2->seq.len -= bcd_len;
+            seq2->qual.str += bcd_len;
+            seq2->qual.len -= bcd_len;
         }
         if (outfile->mode == READS_INTERLEAVED) {
             ret = qes_seqfile_write(outfile->fwd_file, seq2);
@@ -979,10 +979,10 @@ process_read_pair_single(struct axe_config *config, struct qes_seq *seq1,
             }
         }
         if (config->trim_rev) {
-            seq2->seq.s -= bcd_len;
-            seq2->seq.l += bcd_len;
-            seq2->qual.s -= bcd_len;
-            seq2->qual.l += bcd_len;
+            seq2->seq.str -= bcd_len;
+            seq2->seq.len += bcd_len;
+            seq2->qual.str -= bcd_len;
+            seq2->qual.len += bcd_len;
         }
     }
     return 0;
@@ -1381,7 +1381,7 @@ axe_match_read (ssize_t *value, struct axe_trie *trie,
     }
     /* Set *value here, then we just don't update it on error */
     *value = -1;
-    if (seq->seq.l < trie->min_len) {
+    if (seq->seq.len < trie->min_len) {
         return 1;
     }
     /* Only look until the maximum of the largest barcode, or seq len */
@@ -1393,14 +1393,14 @@ axe_match_read (ssize_t *value, struct axe_trie *trie,
     }
     /* Consume seq until we can't */
     do {
-        trie_state_walk(trie_iter, seq->seq.s[seq_pos]);
+        trie_state_walk(trie_iter, seq->seq.str[seq_pos]);
         if (trie_state_is_terminal(trie_iter)) {
             if (last_good_state != NULL) {
                 trie_state_free(last_good_state);
             }
             last_good_state = trie_state_clone(trie_iter);
         }
-    } while (trie_state_is_walkable(trie_iter, seq->seq.s[++seq_pos]));
+    } while (trie_state_is_walkable(trie_iter, seq->seq.str[++seq_pos]));
     /* If we get to a terminal state, then great! */
     if (trie_state_is_terminal(trie_iter)) {
         trie_state_walk(trie_iter, '\0');
