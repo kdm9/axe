@@ -243,7 +243,9 @@ axe_read_barcodes(struct axe_config *config)
     struct axe_barcode **barcodes = NULL;
     size_t n_barcode_pairs = 0; /* Entries in file */
     size_t n_barcodes_alloced = 8;
+    const char *bad_fname_chars = "'\"!@#$%^&*()+=~`[]{}\\|;:/?><,";
     char *line = NULL;
+    char *tmp = NULL;
     size_t linesz = 128;
     ssize_t linelen = 0;
     size_t iii = 0;
@@ -280,6 +282,12 @@ axe_read_barcodes(struct axe_config *config)
         if (this_barcode == NULL) {
             fprintf(stderr, "Couldn't parse barcode line '%s'\n", line);
             goto error;
+        }
+        /* Replace all bad chars with '-' */
+        tmp = strpbrk(this_barcode->id, bad_fname_chars);
+        while (tmp != NULL) {
+            *tmp = '-'; /* Replace with dash */
+            tmp = strpbrk(tmp + 1, bad_fname_chars);
         }
         /* Add the barcode to the array */
         barcodes[n_barcode_pairs++] = this_barcode;
