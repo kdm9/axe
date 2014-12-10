@@ -64,9 +64,8 @@ size_t * gsl_combination_data (const gsl_combination * c);
 int gsl_combination_valid (gsl_combination * c);
 int gsl_combination_next (gsl_combination * c);
 int gsl_combination_prev (gsl_combination * c);
-inline size_t gsl_combination_get (const gsl_combination * c, const size_t i);
 
-inline size_t
+static inline size_t
 gsl_combination_get (const gsl_combination * c, const size_t i)
 {
   return c->data[i];
