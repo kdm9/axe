@@ -1,14 +1,9 @@
 language: c
 
 env:
-  # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
-  #   via the "travis encrypt" command using the project repo's public key
- global:
-  - secure: "HOl3aP87cGovAM8Vev2y+JmhV9NY4i1GhbGqw7sR4lQCDvrIgTqDzGoP4fuOnYf7SNRo3dx3zPRE2QPs6/SSGHNY94BbKvb5gFQrlJSAwvDKRiK/k40f+k/yw2fI+8cpc3ZJT2UxVcb1YZuViIRyXEucLp09aDojNmqmdBo9r58="
  matrix:
   - BUILD_TYPE=Release
   - BUILD_TYPE=Debug
-  - BUILD_TYPE=Coverage
 
 compiler:
  - clang
@@ -18,8 +13,6 @@ before_install:
  - sudo add-apt-repository --yes ppa:kalakris/cmake
  - sudo apt-get update -qq
  - sudo apt-get install --yes cmake
-
-install:
  - sudo apt-get update
  - sudo apt-get install lcov python-pip valgrind libgsl0-dev
  - mkdir zlib && cd zlib
@@ -30,18 +23,12 @@ install:
  - make
  - sudo make install
  - cd ../..
- - git clone --recursive https://github.com/kdmurray91/libqes.git
- - cd libqes
- - mkdir build && cd build
- - cmake ..
- - make
- - sudo make install
- - cd ../..
+
+install:
  - git submodule update --init
  - mkdir build
  - mkdir target
  - cd build
- - sudo pip install cpp-coveralls
 
 script:
  - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DCMAKE_BUILD_TYPE=$BUILD_TYPE
@@ -49,17 +36,3 @@ script:
  - ctest --verbose
  - make install
  - test -f ../target/bin/axe
-
-after_success:
- - cd ..
- - if [ "$BUILD_TYPE" == "Coverage" ] ; then coveralls -e target -e tests -e src/datrie -e src/kmlib -e zlib -E '.*\.h' -e build/CMakeFiles; fi
-
-addons:
-  coverity_scan:
-    project:
-      name: "kdmurray91/axe"
-      description: "The rapid, accurate read demultiplexer"
-    notification_email: kevin@kdmurray.id.au
-    build_command_prepend: "cd build; rm -rf *; cmake -DCMAKE_BUILD_TYPE=Coverage .."
-    build_command:   "make"
-    branch_pattern: coverity_scan
