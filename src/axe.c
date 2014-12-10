@@ -17,7 +17,7 @@
  */
 
 #include "axe.h"
-#include <gsl/gsl_combination.h>
+#include "gsl_combination.h"
 
 /* Holds the current timestamp, so we don't have to free the returned string
  * from now(). */
