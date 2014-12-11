@@ -14,11 +14,11 @@ IF (NOT CMAKE_BUILD_TYPE)
 ENDIF()
 
 # git versioning
-INCLUDE(GitSemVer)
-
-GetGitSemVer(AXE_VERSION)
+EXECUTE_PROCESS(COMMAND git describe
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+		OUTPUT_VARIABLE AXE_VERSION
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
 MESSAGE(STATUS "${CMAKE_BUILD_TYPE} build of axe version: ${AXE_VERSION}")
-
 
 ###############################
 ## Find Packages and Headers ##
