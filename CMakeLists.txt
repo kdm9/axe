@@ -24,14 +24,7 @@ MESSAGE(STATUS "${CMAKE_BUILD_TYPE} build of axe version: ${AXE_VERSION}")
 ## Find Packages and Headers ##
 ###############################
 
-INCLUDE(CheckSymbolExists)
-INCLUDE(CheckIncludeFiles)
-FIND_PACKAGE(ZLIB 1.2.5 REQUIRED)
-SET(AXE_DEPENDS_LIBS
-    ${AXE_DEPENDS_LIBS} ${ZLIB_LIBRARIES} ${GSL_LIBRARIES})
-SET(AXE_DEPENDS_INCLUDE_DIRS
-    ${AXE_DEPENDS_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS} ${GSL_INCLUDE_DIRS})
-INCLUDE_DIRECTORIES(${AXE_DEPENDS_INCLUDE_DIRS})
+# all are now handled by libqes
 
 ##########################
 ## Set Compiler Options ##
