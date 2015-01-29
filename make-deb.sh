@@ -7,7 +7,9 @@ test -d .git
 
 PKG_DIR=axe-deb
 SRC_DIRS="src/ docs/ tests/ CMakeLists.txt debian/ version"
-VERSION="$(git describe)"
+
+# grab version from changelog
+VERSION="$(head -n 1 debian/changelog  |perl -pe 's/.*\((.+)-.*/$1/')"
 
 echo $VERSION >version
 rm -rf $PKG_DIR/* axe_*.orig.tar.gz
