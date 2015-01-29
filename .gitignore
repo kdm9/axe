@@ -10,3 +10,7 @@ build
 *.so
 tags
 version
+
+# debian
+axe-deb
+axe_*
