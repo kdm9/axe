@@ -17,4 +17,4 @@ mkdir -p $PKG_DIR
 cp -r $SRC_DIRS $PKG_DIR
 
 
-tar czf axe_${VERSION}.orig.tar.gz $SRC_DIRS
+tar czf axe-demuxer_${VERSION}.orig.tar.gz $SRC_DIRS

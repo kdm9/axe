@@ -1,4 +1,4 @@
-axe (0.2.1-1) UNRELEASED; urgency=medium
+axe-demuxer (0.2.1-1) UNRELEASED; urgency=medium
 
   * Initial debian release. (Closes: #XXXXX)
 
