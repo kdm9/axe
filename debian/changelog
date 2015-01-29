@@ -1,5 +1,5 @@
-axe (0.2.0-1) UNRELEASED; urgency=medium
+axe (0.2.1-1) UNRELEASED; urgency=medium
 
-  * Initial release. (Closes: #XXXXX)
+  * Initial debian release. (Closes: #XXXXX)
 
  -- Kevin Murray <spam@kdmurray.id.au>  Mon, 26 Jan 2015 11:00:07 +1100
