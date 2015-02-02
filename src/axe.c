@@ -733,7 +733,7 @@ axe_make_outputs(struct axe_config *config)
             break;
         case READS_UNKNOWN:
         default:
-            fprintf(stderr, "[make_outputs] Error: bad output mode %i\n",
+            fprintf(stderr, "[make_outputs] Error: bad output mode %ui\n",
                     config->out_mode);
             goto error;
         }
@@ -768,7 +768,7 @@ axe_make_outputs(struct axe_config *config)
         break;
     case READS_UNKNOWN:
     default:
-        fprintf(stderr, "[make_outputs] Error: bad output mode %i\n",
+        fprintf(stderr, "[make_outputs] Error: bad output mode %ui\n",
                 config->out_mode);
         goto error;
     }
@@ -1033,7 +1033,7 @@ process_file_single(struct axe_config *config)
         break;
     case READS_UNKNOWN:
     default:
-        fprintf(stderr, "[process_file_single] Bad infile mode %i\n",
+        fprintf(stderr, "[process_file_single] Bad infile mode %ui\n",
                 config->in_mode);
         goto exit;
         break;
@@ -1152,7 +1152,7 @@ process_file_combo(struct axe_config *config)
     case READS_SINGLE:
     case READS_UNKNOWN:
     default:
-        fprintf(stderr, "[process_file_combo] Bad infile mode %i\n",
+        fprintf(stderr, "[process_file_combo] Bad infile mode %ui\n",
                 config->in_mode);
         goto error;
         break;
