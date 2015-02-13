@@ -1072,7 +1072,7 @@ exit:
 
 static int
 process_read_pair_combo(struct axe_config *config, struct qes_seq *seq1,
-                        struct qes_seq *seq2, enum read_mode read_mode)
+                        struct qes_seq *seq2)
 {
     ssize_t barcode_pair_index = 0;
     intptr_t bcd1 = -1;
@@ -1161,7 +1161,7 @@ process_file_combo(struct axe_config *config)
 
 interleaved:
     QES_SEQFILE_ITER_INTERLEAVED_BEGIN(fwdsf, seq1, seq2, seqlen1, seqlen2)
-    if (process_read_pair_combo(config, seq1, seq2, config->in_mode)) {
+    if (process_read_pair_combo(config, seq1, seq2)) {
         have_error = 1;
         break;
     }
@@ -1171,7 +1171,7 @@ interleaved:
 
 paired:
     QES_SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2)
-    if (process_read_pair_combo(config, seq1, seq2, config->in_mode)) {
+    if (process_read_pair_combo(config, seq1, seq2)) {
         have_error = 1;
         break;
     }
