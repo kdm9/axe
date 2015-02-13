@@ -917,10 +917,11 @@ process_read_pair_single(struct axe_config *config, struct qes_seq *seq1,
         /* No match */
         qes_seqfile_write(config->unknown_output->fwd_file, seq1);
         if (seq2 != NULL) {
-            if (config->out_mode == READS_INTERLEAVED)
+            if (config->out_mode == READS_INTERLEAVED) {
                 qes_seqfile_write(config->unknown_output->fwd_file, seq2);
-            else
+            } else {
                 qes_seqfile_write(config->unknown_output->rev_file, seq2);
+            }
         }
         config->reads_failed++;
         return 0;
@@ -1071,7 +1072,7 @@ exit:
 
 static int
 process_read_pair_combo(struct axe_config *config, struct qes_seq *seq1,
-                        struct qes_seq *seq2, enum read_mode read_mode)
+                        struct qes_seq *seq2)
 {
     ssize_t barcode_pair_index = 0;
     intptr_t bcd1 = -1;
@@ -1088,7 +1089,7 @@ process_read_pair_combo(struct axe_config *config, struct qes_seq *seq1,
     if (r1_ret != 0 || r2_ret != 0) {
         /* No match */
         qes_seqfile_write(config->unknown_output->fwd_file, seq1);
-        if (read_mode == READS_INTERLEAVED) {
+        if (config->out_mode == READS_INTERLEAVED) {
             qes_seqfile_write(config->unknown_output->fwd_file, seq2);
         } else {
             qes_seqfile_write(config->unknown_output->rev_file, seq2);
@@ -1101,7 +1102,7 @@ process_read_pair_combo(struct axe_config *config, struct qes_seq *seq1,
     if (barcode_pair_index < 0) {
         /* Invalid match */
         qes_seqfile_write(config->unknown_output->fwd_file, seq1);
-        if (read_mode == READS_INTERLEAVED) {
+        if (config->out_mode == READS_INTERLEAVED) {
             qes_seqfile_write(config->unknown_output->fwd_file, seq2);
         } else {
             qes_seqfile_write(config->unknown_output->rev_file, seq2);
@@ -1160,7 +1161,7 @@ process_file_combo(struct axe_config *config)
 
 interleaved:
     QES_SEQFILE_ITER_INTERLEAVED_BEGIN(fwdsf, seq1, seq2, seqlen1, seqlen2)
-    if (process_read_pair_combo(config, seq1, seq2, config->in_mode)) {
+    if (process_read_pair_combo(config, seq1, seq2)) {
         have_error = 1;
         break;
     }
@@ -1170,7 +1171,7 @@ interleaved:
 
 paired:
     QES_SEQFILE_ITER_PAIRED_BEGIN(fwdsf, revsf, seq1, seq2, seqlen1, seqlen2)
-    if (process_read_pair_combo(config, seq1, seq2, config->in_mode)) {
+    if (process_read_pair_combo(config, seq1, seq2)) {
         have_error = 1;
         break;
     }
