@@ -29,37 +29,7 @@ MESSAGE(STATUS "${CMAKE_BUILD_TYPE} build of axe version: ${AXE_VERSION}")
 ## Find Packages and Headers ##
 ###############################
 
-# all from CMakeLists.txt in libqes
-
-# Header/symbols
-INCLUDE(CheckSymbolExists)
-INCLUDE(CheckFunctionExists)
-INCLUDE(CheckLibraryExists)
-INCLUDE(CheckIncludeFiles)
-
-CHECK_SYMBOL_EXISTS(getline stdio.h GETLINE_FOUND)
-CHECK_SYMBOL_EXISTS(strndup string.h STRNDUP_FOUND)
-CHECK_INCLUDE_FILES(malloc.h MALLOC_H_FOUND)
-IF(MALLOC_H_FOUND)
-    CHECK_SYMBOL_EXISTS(memalign malloc.h MEMALIGN_FOUND)
-ELSE()
-    SET(MEMALIGN_FOUND False)
-ENDIF()
-CHECK_SYMBOL_EXISTS(getpagesize unistd.h GETPAGESIZE_FOUND)
-
-FIND_PACKAGE(ZLIB 1.2.1 REQUIRED)
-CHECK_LIBRARY_EXISTS(${ZLIB_LIBRARIES} gzbuffer "" GZBUFFER_FOUND)
-
-# Set dependency flags appropriately
-SET(LIBQES_DEPENDS_LIBS
-    ${LIBQES_DEPENDS_LIBS}
-    ${ZLIB_LIBRARIES})
-SET(LIBQES_DEPENDS_INCLUDE_DIRS
-    ${LIBQES_DEPENDS_INCLUDE_DIRS}
-    ${ZLIB_INCLUDE_DIRS})
-SET(LIBQES_DEPENDS_CFLAGS
-    ${LIBQES_DEPENDS_CFLAGS}
-    ${ZLIB_CFLAGS})
+# Done by libqes' CML.txt
 
 ##########################
 ## Set Compiler Options ##
@@ -86,22 +56,21 @@ SET(AXEWRN "${AXEWRN} -Wold-style-definition -Waddress -Wmissing-noreturn ")
 SET(AXEWRN "${AXEWRN} -Wstrict-overflow=1 -Wextra -Warray-bounds -Wall -D_FORTIFY_SOURCE=2")
 
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${AXEWRN} ${LIBQES_DEPENDS_CFLAGS}")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${AXEWRN}")
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src
                     ${CMAKE_SOURCE_DIR}/src/datrie
                     ${CMAKE_SOURCE_DIR}/src/libqes/src
-                    ${CMAKE_SOURCE_DIR}/src/gsl
-                    ${LIBQES_DEPENDS_INCLUDE_DIRS})
+                    ${CMAKE_SOURCE_DIR}/src/gsl)
 LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/lib)
 
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
 
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/axe_config.h.in
                ${CMAKE_BINARY_DIR}/axe_config.h)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/libqes/src/qes_config.h.in
-               ${CMAKE_BINARY_DIR}/qes_config.h)
 
 ADD_SUBDIRECTORY(docs)
 ADD_SUBDIRECTORY(tests)
 ADD_SUBDIRECTORY(src)
+SET(LIBQES_AS_SUBMODULE True)  # stop libqes installing itself
+ADD_SUBDIRECTORY(src/libqes)
