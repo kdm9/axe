@@ -10,7 +10,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 ENABLE_TESTING()
 
 IF (NOT CMAKE_BUILD_TYPE)
-	SET(CMAKE_BUILD_TYPE Release)
+        SET(CMAKE_BUILD_TYPE Release)
 ENDIF()
 
 IF (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/version")
@@ -22,25 +22,26 @@ ELSE()
 			OUTPUT_VARIABLE AXE_VERSION
 			OUTPUT_STRIP_TRAILING_WHITESPACE)
 ENDIF()
+
 MESSAGE(STATUS "${CMAKE_BUILD_TYPE} build of axe version: ${AXE_VERSION}")
 
 ###############################
 ## Find Packages and Headers ##
 ###############################
 
-# all are now handled by libqes
+# Done by libqes' CML.txt
 
 ##########################
 ## Set Compiler Options ##
 ##########################
 
 IF (CMAKE_COMPILER_IS_GNUCC)
-	SET(AXEWRN "${AXEWRN} -Woverride-init -Wnormalized=id -Wlogical-op")
-	EXECUTE_PROCESS(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-			OUTPUT_VARIABLE GCC_VERSION)
-	IF (GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9)
-		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
-	ENDIF()
+        SET(AXEWRN "${AXEWRN} -Woverride-init -Wnormalized=id -Wlogical-op")
+        EXECUTE_PROCESS(COMMAND ${CMAKE_C_COMPILER} -dumpversion
+                        OUTPUT_VARIABLE GCC_VERSION)
+        IF (GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9)
+                SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
+        ENDIF()
 ENDIF()
 
 # Set CFLAGS
@@ -59,13 +60,17 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${AXEWRN}")
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src
                     ${CMAKE_SOURCE_DIR}/src/datrie
+                    ${CMAKE_SOURCE_DIR}/src/libqes/src
                     ${CMAKE_SOURCE_DIR}/src/gsl)
 LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/lib)
 
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/libqes/src)
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
+
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/axe_config.h.in
+               ${CMAKE_BINARY_DIR}/axe_config.h)
 
 ADD_SUBDIRECTORY(docs)
 ADD_SUBDIRECTORY(tests)
 ADD_SUBDIRECTORY(src)
+SET(LIBQES_AS_SUBMODULE True)  # stop libqes installing itself
 ADD_SUBDIRECTORY(src/libqes)

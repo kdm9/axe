@@ -10,3 +10,8 @@ build
 *.so
 tags
 version
+
+# debian
+version
+axe-deb
+axe-demuxer_*
