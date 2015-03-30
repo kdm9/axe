@@ -36,7 +36,7 @@ possible, I just don't have machines available to test. Please report any
 installation issues on any system as GitHub bugs and I'll do my best to sort
 them out.
 
-In short, on Linux, get the dependencies (see below), and:
+In short, on *NIX, get the dependencies (see below), and:
 
     git clone --recursive https://github.com/kdmurray91/axe.git axe
     cd axe
@@ -53,7 +53,7 @@ one above:
 
 e.g.:
 
-    cmake -DCMAKE_INSTALL_PREFIX=~/ ..
+    cmake -DCMAKE_INSTALL_PREFIX=$HOME ..
 
 For me, using `~/` as the prefix will install `axe` under `/home/kevin/bin` on
 GNU/Linux, and (if I had one) `/Users/kevin/bin` on Mac OSX.It's also wise to
@@ -79,7 +79,7 @@ supercomputers, which often have very old versions of zlib. To do so:
 
 And then, use the following cmake command, assuming your prefix is `~/`:
 
-    cmake -DCMAKE_INSTALL_PREFIX=~/ -DZLIB_ROOT=~/ ..
+    cmake -DCMAKE_INSTALL_PREFIX=$HOME -DZLIB_ROOT=$HOME ..
 
 
 Usage:
@@ -95,7 +95,7 @@ Implementation Progress:
  - [x] Single ended read de-multiplexing
  - [x] Interleaved/Paired input and output with single-ended de-multiplexing
  - [x] Combinatorial de-multiplexing
- - [x] CLI integration tests
+ - [ ] CLI integration tests
  - [ ] Comprehensive `libaxe` tests
  - [ ] Comprehensive CLI tests
 
@@ -116,7 +116,7 @@ LICENSE
 -------
 
 The source of axe itself, namely `src/axe*.[ch]` and `tests/*.[ch]`, is
-Copyright 2014 Kevin Murray. All axe source code is licensed under the GNU
+Copyright 2014-2015 Kevin Murray. All axe source code is licensed under the GNU
 GPL version 3 or greater, a copy of which is included with this source as
 `LICENCE.txt`
 
