@@ -452,7 +452,8 @@ axe_make_file_ext(const struct axe_config *config)
     if (!axe_config_ok(config)) {
         return NULL;
     }
-    if (config->out_compress_level > 1) {
+    if (config->out_compress_level > 0 &&
+        config->out_compress_level < 10) {
         return strdup("fastq.gz");
     }
     return strdup("fastq");
