@@ -126,6 +126,7 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
      * don't need to explicity set them. */
     config->mismatches = 1;
     config->verbosity = 0;
+    config->out_compress_level = 0;
     /* Parse argv using getopt */
     while ((c = getopt_long(argc, argv, axe_opts, axe_longopts, &optind)) > 0){
         switch (c) {

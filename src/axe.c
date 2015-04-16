@@ -464,9 +464,10 @@ axe_make_zmode(const struct axe_config *config)
     if (!axe_config_ok(config)) {
         return NULL;
     }
-    if (config->out_compress_level > 1) {
-        char tmp[10] = "";
-        snprintf(tmp, 9, "w%d", config->out_compress_level);
+    if (config->out_compress_level > 0 &&
+        config->out_compress_level < 10) {
+        char tmp[3] = "";
+        snprintf(tmp, 3, "w%d", config->out_compress_level);
         return strdup(tmp);
     }
     return strdup("wT");
