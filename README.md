@@ -10,7 +10,7 @@ AXE
 AXE very rapidly selects the optimal barcode present in a sequence read, even
 in the presence of sequencing errors. The algorithm is able to handle
 combinatorial barcoding, barcodes of differing length, and several mismatches
-per barcode.  Early result indicate far improved accuracy and speed over
+per barcode. Early results indicate far improved accuracy and speed over
 existing de-multiplexers. Unscientific trials show AXE processes more than
 500,000 reads per second.
 
@@ -74,7 +74,7 @@ supercomputers, which often have very old versions of zlib. To do so:
     wget http://zlib.net/zlib-1.2.8.tar.gz
     tar xvf zlib-1.2.8.tar.gz
     cd zlib-1.2.8
-    ./configure --prefix=<your_prefix> # e.g. --prefix=~/
+    ./configure --prefix=<your_prefix> # e.g. --prefix=$HOME
     make && make install
 
 And then, use the following cmake command, assuming your prefix is `~/`:
