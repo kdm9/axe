@@ -42,7 +42,7 @@ match to a hamming distance of 2, we create three tries: One containing all
 barcodes, verbatim, and two tries where every sequence within a hamming
 distance of 1 and 2 of each barcode respectively. Hereafter, these tries are
 referred to  as the 0, 1 and 2-mm tries, for a hamming distance (mismatch) of
-0, 1 and 2.. Then, we find the longest prefix in each sequence read in the 0mm
+0, 1 and 2. Then, we find the longest prefix in each sequence read in the 0mm
 trie. If this prefix is not a valid leaf in the 0mm trie, we find the longest
 prefix in the 1mm trie, and so on for all tries in ascending order. If no
 prefix of the read is a complete sequence in any trie, the read is assigned to
