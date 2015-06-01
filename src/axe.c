@@ -162,18 +162,37 @@ _axe_format_outfile_path (const char *prefix, const char *id, int read,
 {
     char buf[4096];
     int res = 0;
+    char *our_prefix = NULL;
+    char lastchr = '\0';
+    size_t prefix_len = 0;
 
     if (prefix == NULL || id == NULL) {
         return NULL;
     }
-    if (read > 0) {
-        res = snprintf(buf, 4096, "%s_%s_R%d.%s", prefix, id, read, ext);
+
+    prefix_len = strlen(prefix);
+    lastchr = prefix[prefix_len - 1];
+    if (lastchr == '/' || lastchr == '\\') {
+        /* Our prefix is a directory, don't add '_' */
+        our_prefix = strdup(prefix);
     } else {
-        res = snprintf(buf, 4096, "%s_%s_il.%s", prefix, id, ext);
+        /* Duplicate and append an underscore to prefix */
+        our_prefix = qes_malloc(prefix_len + 2);
+        our_prefix[prefix_len + 1] = '\0';
+        strncpy(our_prefix, prefix, prefix_len);
+        our_prefix[prefix_len] = '_';
+    }
+
+    if (read > 0) {
+        res = snprintf(buf, 4096, "%s%s_R%d.%s", our_prefix, id, read, ext);
+    } else {
+        res = snprintf(buf, 4096, "%s%s_il.%s", our_prefix, id, ext);
     }
     if (res >= 4096) {
+        qes_free(our_prefix);
         return NULL;
     }
+    qes_free(our_prefix);
     return strndup(buf, 4096);
 }
 
