@@ -23,6 +23,57 @@
  * from now(). */
 char _time_now[10] = "";
 
+const char *progress_bar_chars = "|/-\\";
+unsigned int format_call_number;
+
+char *
+axe_formatter(struct qes_log_entry *entry)
+{
+    char *buf = NULL;
+    const char *colour = ANSIRST;
+    const char *reset = ANSIRST;
+    char marker = ' ';
+    int res = 0;
+
+    if (entry == NULL || entry->message == NULL) return NULL;
+
+    if (entry->level <= QES_LOG_DEBUG) {
+        marker = '.';
+        colour = ANSIBEG ATDIM FGCYN BGBLK ANSIEND;
+        reset = "";
+    } else if (entry->level == AXE_LOG_PROGRESS) {
+        marker = progress_bar_chars[format_call_number++ % 4];
+        colour = ANSIBEG ATNRM FGGRN BGBLK ANSIEND;
+    } else if (entry->level == AXE_LOG_BOLD) {
+        marker = '\0';
+        colour = ANSIBEG ATBLD FGCYN BGBLK ANSIEND;
+    } else if (entry->level <= QES_LOG_INFO) {
+        marker = '\0';
+        colour = ANSIBEG ATNRM FGGRN BGBLK ANSIEND;
+    } else if (entry->level <= QES_LOG_WARNING) {
+        marker = '!';
+        colour = ANSIBEG ATULN FGYEL BGBLK ANSIEND;
+    } else if (entry->level <= QES_LOG_ERROR) {
+        marker = 'E';
+        colour = ANSIBEG ATBLD FGMAG BGBLK ANSIEND;
+    } else {
+        marker = 'F';
+        colour = ANSIBEG ATBLD ATBNK FGRED BGBLK ANSIEND;
+    }
+    if (marker == '\0') {
+        res = asprintf(&buf, "%s%s%s", colour, entry->message, reset);
+    } else {
+        res = asprintf(&buf, "%s[%c] %s%s", colour, marker, entry->message, reset);
+    }
+    if (res > 0) {
+        return buf;
+    } else {
+        return NULL;
+    }
+}
+
+/* Axe barcode struct ctor/dtor */
+
 struct axe_barcode *
 axe_barcode_create(void)
 {
@@ -44,11 +95,14 @@ axe_barcode_destroy_(struct axe_barcode *barcode)
     qes_free(barcode);
 }
 
+/* Axe config struct ctor/dtor */
+
 struct axe_config *
 axe_config_create(void)
 {
     struct axe_config *config = qes_calloc(1, sizeof(*config));
 
+    config->logger = qes_logger_create();
     /* qes_calloc never returns null, we use errprintexit as the err handler */
     return config;
 }
@@ -61,6 +115,8 @@ axe_config_destroy_(struct axe_config *config)
     if (config == NULL) {
         return;
     }
+    qes_log_message_debug(config->logger,
+                          "Destroying config structure\n");
     /* File names */
     qes_free(config->barcode_file);
     qes_free(config->table_file);
@@ -93,6 +149,9 @@ axe_config_destroy_(struct axe_config *config)
     /* Tries */
     axe_trie_destroy(config->fwd_trie);
     axe_trie_destroy(config->rev_trie);
+    /* Logger */
+    qes_logger_destroy(config->logger);
+    /* config stuct */
     qes_free(config);
 }
 
@@ -175,7 +234,6 @@ read_barcode_combo(char *line)
     }
     res = sscanf(line, "%99s\t%99s\t%99s", seq1, seq2, id);
     if (res < 3) {
-        fprintf(stderr, "Error, sscanf returned %i\n", res);
         return NULL;
     }
     barcode = axe_barcode_create();
@@ -280,7 +338,11 @@ axe_read_barcodes(struct axe_config *config)
             this_barcode = read_barcode_single(line);
         }
         if (this_barcode == NULL) {
-            fprintf(stderr, "Couldn't parse barcode line '%s'\n", line);
+            qes_log_format_fatal(config->logger,
+                                 "Couldn't parse barcode line '%s'\n", line);
+            qes_log_message_warning(config->logger,
+                                    "Check that the format is correct and has "
+                                    "UNIX line endings.");
             goto error;
         }
         /* Replace all bad chars with '-' */
@@ -299,8 +361,9 @@ axe_read_barcodes(struct axe_config *config)
     qes_file_close(qf);
     qes_free(line);
     if (config->verbosity > 0) {
-        fprintf(stderr, "[read_barcodes] (%s) Read in barcodes\n",
-                nowstr());
+        qes_log_format_info(config->logger,
+                            "read_barcodes -- (%s) Read in barcodes\n",
+                            nowstr());
     }
     return 0;
 
@@ -362,7 +425,9 @@ setup_barcode_lookup_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_barcode = config->barcodes[iii];
         if (!axe_barcode_ok(this_barcode)) {
-            fprintf(stderr, "[setup_lookup] Bad barcode at %" PRIu64 "\n", iii);
+            qes_log_format_fatal(config->logger,
+                                 "setup_lookup -- Bad barcode at %" PRIu64 "\n",
+                                 iii);
             goto error;
         }
         if (!axe_trie_get(seq1_trie, this_barcode->seq1, &tmp)) {
@@ -438,7 +503,9 @@ axe_make_tries(struct axe_config *config)
     return 0;
 
 error:
-    fprintf(stderr, "[make_tries] ERROR: axe_trie_create returned NULL\n");
+    qes_log_message_fatal(
+            config->logger,
+            "make_tries -- ERROR: axe_trie_create returned NULL\n");
     axe_trie_destroy(config->fwd_trie);
     if (config->match_combo) {
         axe_trie_destroy(config->rev_trie);
@@ -498,7 +565,8 @@ load_tries_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         if (!axe_barcode_ok(this_bcd)) {
-            fprintf(stderr, "[load_tries] Bad R1 barcode at %" PRIu64 "\n", iii);
+            qes_log_format_fatal(config->logger,
+                    "load_tries -- Bad R1 barcode at %" PRIu64 "\n", iii);
             ret = -1;
             goto exit;
         }
@@ -508,7 +576,8 @@ load_tries_combo(struct axe_config *config)
         if (!axe_trie_get(config->fwd_trie, this_bcd->seq1, &tmp)) {
             ret = axe_trie_add(config->fwd_trie, this_bcd->seq1, ++bcd1);
             if (ret != 0) {
-                fprintf(stderr, "ERROR: Could not load barcode %s into trie %" PRIu64 "\n",
+                qes_log_format_fatal(config->logger,
+                        "load_tries -- Could not load barcode %s into trie %" PRIu64 "\n",
                         this_bcd->seq1, iii);
                 ret = 1;
                 goto exit;
@@ -529,17 +598,17 @@ load_tries_combo(struct axe_config *config)
                 if (ret != 0) {
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
-                            fprintf(stderr,
-                                    "[%s] warning: Will only match to %dmm\n",
-                                    __func__, (int)jjj - 1);
+                            qes_log_format_warning(config->logger,
+                                "load_tries -- warning: Will only match to %dmm\n",
+                                 (int)jjj - 1);
                         }
                         axe_trie_delete(config->fwd_trie, mutated[mmm]);
                         qes_free(mutated[mmm]);
                         continue;
                     }
-                    fprintf(stderr,
-                            "[%s] ERROR: Barcode %s already in fwd trie (%dmm) %s\n",
-                            __func__, mutated[mmm], (int)jjj, this_bcd->seq1);
+                    qes_log_format_fatal(config->logger,
+                            "load_tries -- Barcode %s already in fwd trie (%dmm) %s\n",
+                            mutated[mmm], (int)jjj, this_bcd->seq1);
                     retval = 1;
                     goto exit;
                 }
@@ -555,7 +624,8 @@ load_tries_combo(struct axe_config *config)
         if (!axe_trie_get(config->rev_trie, this_bcd->seq2, &tmp)) {
             ret = axe_trie_add(config->rev_trie, this_bcd->seq2, ++bcd2);
             if (ret != 0) {
-                fprintf(stderr, "ERROR: Could not load barcode %s into trie %" PRIu64 "\n",
+                qes_log_format_fatal(config->logger,
+                        "load_tries -- Could not load barcode %s into trie %" PRIu64 "\n",
                         this_bcd->seq2, iii);
                 retval = 1;
                 goto exit;
@@ -576,18 +646,18 @@ load_tries_combo(struct axe_config *config)
                 if (ret != 0) {
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
-                            fprintf(stderr,
-                                    "[%s] warning: Will only match %s to %dmm\n",
-                                    __func__, this_bcd->id, (int)jjj - 1);
+                            qes_log_format_warning(config->logger,
+                                "load_tries -- Will only match %s to %dmm\n",
+                                this_bcd->id, (int)jjj - 1);
                         }
                         trie_delete(config->rev_trie->trie,
                                     mutated[mmm]);
                         qes_free(mutated[mmm]);
                         continue;
                     }
-                    fprintf(stderr,
-                            "[%s] ERROR: Barcode %s already in rev trie (%dmm)\n",
-                            __func__, mutated[mmm], (int)jjj);
+                    qes_log_format_fatal(config->logger,
+                            "load_tries -- Barcode %s already in rev trie (%dmm) %s\n",
+                            mutated[mmm], (int)jjj, this_bcd->seq1);
                     retval = 1;
                     goto exit;
                 }
@@ -877,7 +947,7 @@ write_barcoded_read_combo(struct axe_output *out, struct qes_seq *seq1,
         ret = qes_seqfile_write(out->rev_file, seq2);
         if (ret < 1) {
             fprintf(stderr,
-                    "[process_file] Error: writing to rev file %s failed\n%s\n",
+                    "process_file -- Error: writing to rev file %s failed\n%s\n",
                     out->rev_file->qf->path,
                     qes_file_error(out->rev_file->qf));
             return 1;
@@ -896,8 +966,10 @@ increment_reads_print_progress(struct axe_config *config)
     config->reads_processed++;
     if (config->reads_processed % 100000 == 0) {
         if (config->verbosity >= 0) {
-            fprintf(stderr, "%s: Processed %.1fM %s\r",
-                    nowstr(), (float)(config->reads_processed/1000000.0),
+            axe_format_progress(config->logger,
+                                "%s: Processed %.1fM %s\r",
+                                nowstr(),
+                                (float)(config->reads_processed/1000000.0),
                     config->out_mode == READS_SINGLE ? "reads" : "read pairs");
         }
     }
@@ -913,7 +985,7 @@ process_read_pair_single(struct axe_config *config, struct qes_seq *seq1,
     struct axe_output *outfile = NULL;
     size_t bcd_len = 0;
 
-    ret = axe_match_read(&bcd, config->fwd_trie, seq1);
+    ret = axe_match_read(config, &bcd, config->fwd_trie, seq1);
     increment_reads_print_progress(config);
     if (ret != 0) {
         /* No match */
@@ -973,8 +1045,9 @@ process_read_pair_single(struct axe_config *config, struct qes_seq *seq1,
         if (outfile->mode == READS_INTERLEAVED) {
             ret = qes_seqfile_write(outfile->fwd_file, seq2);
             if (ret < 1) {
-                fprintf(stderr,
-                        "[process_file] Error: writing to il file %s failed\n%s\n",
+                qes_log_format_fatal(
+                        config->logger,
+                        "process_file -- Writing to file %s failed\n%s\n",
                         outfile->fwd_file->qf->path,
                         qes_file_error(outfile->fwd_file->qf));
                 return 1;
@@ -982,8 +1055,9 @@ process_read_pair_single(struct axe_config *config, struct qes_seq *seq1,
         } else if (outfile->mode == READS_PAIRED) {
             ret = qes_seqfile_write(outfile->rev_file, seq2);
             if (ret < 1) {
-                fprintf(stderr,
-                        "[process_file] Error: writing to rev file %s failed\n%s\n",
+                qes_log_format_fatal(
+                        config->logger,
+                        "process_file -- Writing to file %s failed\n%s\n",
                         outfile->rev_file->qf->path,
                         qes_file_error(outfile->rev_file->qf));
                 return 1;
@@ -1009,13 +1083,13 @@ process_file_single(struct axe_config *config)
     int retval = -1;
 
     if (!axe_config_ok(config)) {
-        fprintf(stderr, "[process_file] Bad config struct\n");
         return -1;
     }
     fwdsf = qes_seqfile_create(config->infiles[0], "r");
     if (fwdsf == NULL) {
-        fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
-                config->infiles[0]);
+        qes_log_format_fatal(config->logger,
+                             "process_file -- Couldn't open seqfile %s\n",
+                             config->infiles[0]);
         goto exit;
     }
     switch(config->in_mode) {
@@ -1028,16 +1102,18 @@ process_file_single(struct axe_config *config)
     case READS_PAIRED:
         revsf = qes_seqfile_create(config->infiles[1], "r");
         if (revsf == NULL) {
-            fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
-                    config->infiles[1]);
+            qes_log_format_fatal(config->logger,
+                                 "process_file -- Couldn't open seqfile %s\n",
+                                 config->infiles[1]);
             goto exit;
         }
         goto paired;
         break;
     case READS_UNKNOWN:
     default:
-        fprintf(stderr, "[process_file_single] Bad infile mode %ui\n",
-                config->in_mode);
+        qes_log_format_fatal(config->logger,
+                             "process_file_single -- Bad infile mode %u\n",
+                             config->in_mode);
         goto exit;
         break;
     }
@@ -1085,8 +1161,8 @@ process_read_pair_combo(struct axe_config *config, struct qes_seq *seq1,
     size_t bcd2_len = 0;
     struct axe_output *outfile = NULL;
 
-    r1_ret = axe_match_read(&bcd1, config->fwd_trie, seq1);
-    r2_ret = axe_match_read(&bcd2, config->rev_trie, seq2);
+    r1_ret = axe_match_read(config, &bcd1, config->fwd_trie, seq1);
+    r2_ret = axe_match_read(config, &bcd2, config->rev_trie, seq2);
     increment_reads_print_progress(config);
     if (r1_ret != 0 || r2_ret != 0) {
         /* No match */
@@ -1130,13 +1206,13 @@ process_file_combo(struct axe_config *config)
     int have_error = 0;
 
     if (!axe_config_ok(config)) {
-        fprintf(stderr, "[process_file] Bad config struct\n");
         return -1;
     }
     fwdsf = qes_seqfile_create(config->infiles[0], "r");
     if (fwdsf == NULL) {
-        fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
-                config->infiles[0]);
+        qes_log_format_fatal(config->logger,
+                             "process_file -- Couldn't open seqfile %s\n",
+                             config->infiles[0]);
         goto error;
     }
     switch(config->in_mode) {
@@ -1146,8 +1222,9 @@ process_file_combo(struct axe_config *config)
     case READS_PAIRED:
         revsf = qes_seqfile_create(config->infiles[1], "r");
         if (revsf == NULL) {
-            fprintf(stderr, "[process_file] Couldn't open seqfile %s\n",
-                    config->infiles[1]);
+            qes_log_format_fatal(config->logger,
+                                 "process_file -- Couldn't open seqfile %s\n",
+                                 config->infiles[0]);
             goto error;
         }
         goto paired;
@@ -1155,8 +1232,9 @@ process_file_combo(struct axe_config *config)
     case READS_SINGLE:
     case READS_UNKNOWN:
     default:
-        fprintf(stderr, "[process_file_combo] Bad infile mode %ui\n",
-                config->in_mode);
+        qes_log_format_fatal(config->logger,
+                             "process_file_combo -- Bad infile mode %u\n",
+                             config->in_mode);
         goto error;
         break;
     }
@@ -1203,8 +1281,9 @@ axe_process_file(struct axe_config *config)
     }
     start = clock();
     if (config->verbosity >= 0) {
-        fprintf(stderr, "[process_file] (%s) Starting demultiplexing\n",
-                nowstr());
+        axe_format_bold(config->logger,
+                        "process_file -- (%s) Starting demultiplexing\n",
+                        nowstr());
     }
     if (config->match_combo) {
         ret = process_file_combo(config);
@@ -1213,8 +1292,11 @@ axe_process_file(struct axe_config *config)
     }
     config->time_taken = (float)(clock() - start) / CLOCKS_PER_SEC;
     if (config->verbosity >= 0) {
-        fprintf(stderr, "\r[process_file] (%s) Finished demultiplexing\n",
-                nowstr());
+        /* Jump to new line so we don't clobber the progress bar */
+        fprintf(stderr, "\n");
+        axe_format_bold(config->logger,
+                        "process_file -- (%s) Finished demultiplexing\n",
+                        nowstr());
     }
     return ret;
 }
@@ -1379,8 +1461,8 @@ axe_trie_add(struct axe_trie *trie, const char *str, intptr_t data)
 }
 
 inline int
-axe_match_read (ssize_t *value, struct axe_trie *trie,
-                const struct qes_seq *seq)
+axe_match_read (struct axe_config *config, ssize_t *value,
+                struct axe_trie *trie, const struct qes_seq *seq)
 {
     TrieState *trie_iter = NULL;
     TrieState *last_good_state = NULL;
@@ -1399,7 +1481,8 @@ axe_match_read (ssize_t *value, struct axe_trie *trie,
     /* Grab tree root iter, and check it. */
     trie_iter = trie_root(trie->trie);
     if (trie_iter == NULL) {
-        fprintf(stderr, "[match_read] trie_root() returned NULL!\n");
+        qes_log_message_fatal(config->logger,
+                              "match_read -- trie_root() returned NULL!\n");
         return -1;
     }
     /* Consume seq until we can't */
@@ -1451,8 +1534,8 @@ axe_write_table(const struct axe_config *config)
     }
     tab_fp = fopen(config->table_file, "w");
     if (tab_fp == NULL) {
-        fprintf(stderr, "[write_table] ERROR: Could not open %s\n%s\n",
-                config->table_file, strerror(errno));
+        qes_log_format_fatal(config->logger, "write_table -- ERROR: Could not open %s\n%s\n",
+                             config->table_file, strerror(errno));
         return 1;
     }
     if (config->match_combo) {
@@ -1478,19 +1561,20 @@ axe_write_table(const struct axe_config *config)
     }
     res = fclose(tab_fp);
     if (res != 0) {
-        fprintf(stderr, "[write_table] ERROR: Couldn't close tab file %s\n%s\n",
-                config->table_file, strerror(errno));
+        qes_log_format_error(config->logger,
+                             "[write_table] Couldn't close tab file %s\n%s\n",
+                              config->table_file, strerror(errno));
         return 1;
     }
     return 0;
 }
 
 int
-axe_print_summary(const struct axe_config *config, FILE *stream)
+axe_print_summary(const struct axe_config *config)
 {
     const char *tmp;
 
-#define print(...)  fprintf(stream, __VA_ARGS__)
+#define million(r) ((float)(r / 1000000.0))
     if (!axe_config_ok(config)) {
         return -1;
     }
@@ -1498,18 +1582,22 @@ axe_print_summary(const struct axe_config *config, FILE *stream)
         /* Say nothing if we're being quiet */
         return 0;
     }
-    fprintf(stream, "\nRun Summary:\n");
+    axe_message_bold(config->logger, "\nRun Summary:\n");
     if (config->verbosity > 1) {
-        print("Being verbose (not that you'll notice)\n");
+        qes_log_message_debug(config->logger,
+                              "Being verbose (not that you'll notice)\n");
     }
     tmp = config->out_mode == READS_SINGLE ? "reads" : "read pairs";
-    print("Processed %" PRIu64 " %s in %0.1f seconds (%0.3fk %s/sec)\n",
-          config->reads_processed, tmp, config->time_taken,
-          (float)(config->reads_processed / 1000) / config->time_taken, tmp);
-    print("%" PRIu64 " %s contained valid barcodes\n",
-          config->reads_demultiplexed, tmp);
-    print("%" PRIu64 " %s could not be demultiplexed\n",
-          config->reads_failed, tmp);
-#undef print
+    axe_format_bold(config->logger,
+            "Processed %.2fM %s in %0.1f seconds (%0.1fK %s/sec)\n",
+            million(config->reads_processed), tmp, config->time_taken,
+            (float)(config->reads_processed / 1000) / config->time_taken, tmp);
+    axe_format_bold(config->logger,
+            "%.2fM %s contained valid barcodes\n",
+            million(config->reads_demultiplexed), tmp);
+    axe_format_bold(config->logger,
+            "%.2fM %s could not be demultiplexed (%0.1f%%)\n",
+            million(config->reads_failed), tmp,
+            ((float)config->reads_failed/(float)(config->reads_processed)*100.0));
     return 0;
 }
