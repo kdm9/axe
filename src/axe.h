@@ -27,6 +27,7 @@
 #include <qes_util.h>
 #include <qes_seq.h>
 #include <qes_seqfile.h>
+#include <qes_log.h>
 
 #include "datrie/trie.h"
 #include "datrie/alpha-map.h"
@@ -82,16 +83,18 @@ struct axe_config {
        Values will be 0 <= x < n_barcode_pairs. barcodes or outputs can then
        be indexed w/ this number */
     ssize_t **barcode_lookup;
+    size_t *mismatch_counts;
     size_t n_barcodes_1; /* Number of first read barcodes */
     size_t n_barcodes_2; /* Number of second read barcodes */
     size_t n_barcode_pairs;
     struct axe_output *unknown_output; /* output for unknown files */
+    struct axe_trie *fwd_trie;
+    struct axe_trie *rev_trie;
+    struct qes_logger *logger;
     enum read_mode in_mode;
     enum read_mode out_mode;
     int out_compress_level;
     size_t mismatches;
-    struct axe_trie *fwd_trie;
-    struct axe_trie *rev_trie;
     uint64_t reads_processed;
     uint64_t reads_demultiplexed;
     uint64_t reads_failed;
@@ -101,7 +104,25 @@ struct axe_config {
     int match_combo             :1; /* Match using combinatorial strategy */
     int permissive              :1; /* Don't error on mutated bcd confict */
     int trim_rev                :1; /* Trim rev read same as fwd read */
+    int debug                   :1; /* Enable debug mode */
 };
+
+extern unsigned int format_call_number;
+
+char *
+axe_formatter(struct qes_log_entry *entry);
+
+#define AXE_LOG_PROGRESS 11
+#define axe_format_progress(log, fmt, ...)  \
+        qes_log_format(log, AXE_LOG_PROGRESS, fmt, __VA_ARGS__)
+#define axe_message_progress(log, msg)      \
+    qes_log_message(log, AXE_LOG_PROGRESS, msg)
+
+#define AXE_LOG_BOLD 12
+#define axe_format_bold(log, fmt, ...)  \
+        qes_log_format(log, AXE_LOG_BOLD, fmt, __VA_ARGS__)
+#define axe_message_bold(log, msg)      \
+    qes_log_message(log, AXE_LOG_BOLD, msg)
 
 static inline int
 axe_config_ok(const struct axe_config *config)
@@ -147,12 +168,6 @@ axe_output_ok(const struct axe_output *output)
     if (output->mode == READS_PAIRED && output->rev_file == NULL) return 0;
     return 1;
 }
-
-#ifndef NDEBUG
-#define AXE_DEBUG_LOG(x) STMT_BEGIN fprintf(stderr, x); STMT_END
-#else
-#define AXE_DEBUG_LOG(x) (void)(x);
-#endif
 
 
 /*===  FUNCTION  ============================================================*
@@ -244,11 +259,11 @@ int axe_load_tries(struct axe_config *config);
 int axe_make_outputs(struct axe_config *config);
 int axe_process_file(struct axe_config *config);
 int axe_write_table(const struct axe_config *config);
-int axe_print_summary(const struct axe_config *config, FILE *stream);
+int axe_print_summary(const struct axe_config *config);
 
 /* Libraries or inner functions */
-extern int axe_match_read(intptr_t *value, struct axe_trie *trie,
-                          const struct qes_seq *seq);
+extern int axe_match_read(struct axe_config *config, intptr_t *value,
+                          struct axe_trie *trie, const struct qes_seq *seq);
 int product(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
 char **hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
                           unsigned int dist, int keep_original);
