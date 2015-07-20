@@ -1,6 +1,3 @@
-[submodule "tests/tinytest"]
-	path = tests/tinytest
-	url = https://github.com/nmathewson/tinytest.git
 [submodule "src/libqes"]
 	path = src/libqes
 	url = https://github.com/kdmurray91/libqes.git
