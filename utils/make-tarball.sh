@@ -14,5 +14,6 @@ set -xe
 
 rm -f ../axe_${version}.orig.tar*
 git archive -o ../axe_${version}.orig.tar $version
-tar -rvf ../axe_${version}.orig.tar --owner=0 --group=0 src/libqes/
+tar -rf ../axe_${version}.orig.tar --owner=0 --group=0 src/libqes/
+tar --delete -vf ../axe_${version}.orig.tar .gitmodules src/libqes/.gitmodules src/libqes/.git
 xz ../axe_${version}.orig.tar
