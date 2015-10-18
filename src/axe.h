@@ -178,7 +178,7 @@ axe_output_ok(const struct axe_output *output)
 
 /*===  FUNCTION  ============================================================*
 Name:           axe_config_create
-Paramters:      void
+Parameters:     void
 Description:    Create a struct axe_config on the heap and initialise members
                 to empty/null values.
 Returns:        struct axe_config *: A valid, empty struct axe_config, or NULL
@@ -188,7 +188,7 @@ struct axe_config *axe_config_create(void);
 
 /*===  FUNCTION  ============================================================*
 Name:           axe_config_destroy
-Paramters:      struct axe_config *: config struct on heap to destroy.
+Parameters:     struct axe_config *: config struct on heap to destroy.
 Description:    Destroy a ``struct axe_config`` on the heap, and set its
                 pointer variable to NULL;
 Returns:        void
@@ -202,7 +202,7 @@ void axe_config_destroy_(struct axe_config *config);
 
 /*===  FUNCTION  ============================================================*
 Name:           axe_output_create
-Paramters:      const char *fwd_fpath: Forwards/interleaved read filepath
+Parameters:     const char *fwd_fpath: Forwards/interleaved read filepath
                 const char *rev_fpath: Reverse read filepath
                 enum read_mode mode: Output mode
                 const char *fp_mode: qes_fopen() mode specifier. See
@@ -216,7 +216,7 @@ struct axe_output *axe_output_create(const char *fwd_fpath,
 
 /*===  FUNCTION  ============================================================*
 Name:           axe_output_destroy
-Paramters:      struct axe_output *: output struct on heap to destroy.
+Parameters:     struct axe_output *: output struct on heap to destroy.
 Description:    Destroy a ``struct axe_output`` on the heap, and set its
                 pointer variable to NULL;
 Returns:        void
@@ -236,7 +236,7 @@ extern int axe_trie_add(struct axe_trie *trie, const char *str,
 extern int axe_trie_delete(struct axe_trie *trie, const char *str);
 /*===  FUNCTION  ============================================================*
 Name:           axe_trie_destroy
-Paramters:      struct axe_trie *: trie struct on heap to destroy.
+Parameters:     struct axe_trie *: trie struct on heap to destroy.
 Description:    Destroy a ``struct axe_trie`` on the heap, and set its
                 pointer variable to NULL;
 Returns:        void
