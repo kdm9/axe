@@ -44,9 +44,9 @@ print_help(void)
     fprintf(stderr, "must be. Likewise for a reverse/interleaved input. If either\n");
     fprintf(stderr, "forward and/or reverse reads are given, interleaved input\n");
     fprintf(stderr, "cannot be. However, one can input interleaved paired reads\n");
-    fprintf(stderr, "and output seperate forwards and reverse reads, and vice versa.\n");
+    fprintf(stderr, "and output separate forwards and reverse reads, and vice versa.\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "The barcode file is a tab-seperated tabular file with an\n");
+    fprintf(stderr, "The barcode file is a tab-separated tabular file with an\n");
     fprintf(stderr, "optional header, and has two alternative formats. The standard\n");
     fprintf(stderr, "form (see below) is expected unless --combinatorial is given.\n");
     fprintf(stderr, "\n");
