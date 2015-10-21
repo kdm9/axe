@@ -21,6 +21,7 @@ addons:
    - lcov
    - libgsl0-dev
    - python
+   - zlib1g-dev
 
 install:
  - git submodule update --init
