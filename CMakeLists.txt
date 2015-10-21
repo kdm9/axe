@@ -29,7 +29,15 @@ MESSAGE(STATUS "${CMAKE_BUILD_TYPE} build of axe version: ${AXE_VERSION}")
 ## Find Packages and Headers ##
 ###############################
 
-# Done by libqes' CML.txt
+FIND_PACKAGE(ZLIB 1.2.5 REQUIRED)
+
+FIND_PACKAGE(GSL)
+
+IF (GSL_FOUND)
+    SET(AXE_DEP_INCLUDES ${GSL_INCLUDE_DIRS})
+    SET(AXE_DEP_LIBS ${GSL_LIBRARIES})
+ENDIF()
+
 
 ##########################
 ## Set Compiler Options ##
