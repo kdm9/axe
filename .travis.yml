@@ -10,6 +10,7 @@ compiler:
  - gcc
 
 sudo: false
+dist: trusty
 
 addons:
  apt:
