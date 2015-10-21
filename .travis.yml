@@ -9,20 +9,14 @@ compiler:
  - clang
  - gcc
 
-before_install:
- - sudo add-apt-repository --yes ppa:kalakris/cmake
- - sudo apt-get update -qq
- - sudo apt-get install --yes cmake
- - sudo apt-get update
- - sudo apt-get install lcov python-pip valgrind libgsl0-dev
- - mkdir zlib && cd zlib
- - wget http://zlib.net/zlib-1.2.8.tar.gz
- - tar xvxf zlib-1.2.8.tar.gz
- - cd zlib-1.2.8
- - ./configure
- - make
- - sudo make install
- - cd ../..
+sudo: false
+
+addons:
+ apt:
+  pacakges:
+   - lcov
+   - libgsl0-dev
+   - python
 
 install:
  - git submodule update --init
