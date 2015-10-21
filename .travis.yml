@@ -10,7 +10,6 @@ compiler:
  - gcc
 
 sudo: false
-dist: trusty
 
 addons:
  apt:
@@ -21,9 +20,16 @@ addons:
    - lcov
    - libgsl0-dev
    - python
-   - zlib1g-dev
 
 install:
+ - pushd $HOME
+ - wget http://zlib.net/zlib-1.2.8.tar.xz
+ - tar xvf zlib-1.2.8.tar.xz
+ - cd zlib-1.2.8
+ - ./configure --prefix=$HOME
+ - make
+ - make install
+ - popd
  - git submodule update --init
  - mkdir build
  - mkdir target
