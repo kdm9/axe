@@ -2,13 +2,20 @@
 Axe Usage
 *********
 
+.. note::
+  For arcane reasons, the name of the ``axe`` binary changed to ``axe-demux``
+  with version 0.3.0. Apologies for the inconvenience, this was required to
+  make ``axe`` installable in Debian and its derivatives. Command-line usage
+  did not change.
+
 Axe has several usage modes. The primary distinction is between the two
 alternate barcoding schemes, single and combinatorial barcoding. Single barcode
 matching is used when only the first read contains barcode sequences.
 Combinatorial barcoding is used when both reads in a read pair contain
 independent (typically different) barcode sequences.
 
-For concise reference, the command-line usage of ``axe`` is reproduced below:
+For concise reference, the command-line usage of ``axe-demux`` is reproduced
+below:
 
 .. literalinclude:: usage.txt
 

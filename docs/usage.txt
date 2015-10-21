@@ -1,7 +1,7 @@
 USAGE:
-axe [-mzc2pt] -b (-f [-r] | -i) (-F [-R] | -I)
-axe -h
-axe -v
+axe-demux [-mzc2pt] -b (-f [-r] | -i) (-F [-R] | -I)
+axe-demux -h
+axe-demux -v
 
 OPTIONS:
     -m, --mismatch	Maximum hamming distance mismatch. [int, default 1]
