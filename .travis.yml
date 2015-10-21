@@ -11,6 +11,10 @@ compiler:
 
 sudo: false
 
+notifications:
+  email:
+    - spam@kdmurray.id.au
+
 addons:
  apt:
   sources:
