@@ -56,7 +56,7 @@ copyright = u'2014, Kevin Murray'
 # built documents.
 #
 # The short X.Y version.
-version = gitversion.getversions()['version']
+version = gitversion.get_versions()['version']
 # The full version, including alpha/beta/rc tags.
 release = version
 
