@@ -20,7 +20,7 @@ SET(COVERAGE_CMD test_axe)
 SET(COVERAGE_OUT "${CMAKE_BINARY_DIR}/coverage_html")
 
 ADD_TEST(NAME "IntegrationTests" COMMAND python
-         ${CMAKE_BINARY_DIR}/bin/axe_integration.py
+         ${CMAKE_BINARY_DIR}/bin/axe_cli_tests.py
          ${CMAKE_BINARY_DIR})
 
 IF (CMAKE_BUILD_TYPE STREQUAL "Coverage")
