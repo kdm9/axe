@@ -36,7 +36,7 @@ install:
  - cd build
 
 script:
- - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+ - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DZLIB_ROOT=$HOME
  - make
  - python ../tests/axe_cli_tests.py  .
  - ./bin/test_axe
