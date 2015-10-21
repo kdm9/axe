@@ -9,7 +9,7 @@ ADD_CUSTOM_TARGET(setup_tests ALL
 		   ${CMAKE_CURRENT_SOURCE_DIR}/data
                    ${CMAKE_BINARY_DIR}/data
 	COMMAND ${CMAKE_COMMAND} -E copy
-                   ${CMAKE_CURRENT_SOURCE_DIR}/axe_integration.py
+                   ${CMAKE_CURRENT_SOURCE_DIR}/axe_cli_tests.py
                    ${CMAKE_BINARY_DIR}/bin
 	COMMAND ${CMAKE_COMMAND} -E make_directory
                    ${CMAKE_BINARY_DIR}/out)

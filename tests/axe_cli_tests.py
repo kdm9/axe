@@ -12,7 +12,7 @@ import unittest
 
 
 if len(sys.argv) < 2:
-    print("USAGE: axe_integration.py $CMAKE_BINARY_DIR")
+    print("USAGE: axe_cli_tests.py $CMAKE_BINARY_DIR")
     exit(-1)
 
 CMAKE_BINARY_DIR = sys.argv.pop(1)
@@ -35,11 +35,11 @@ class AxeTest(unittest.TestCase):
     def __init__(self, methodName='runTest'):
         super(AxeTest, self).__init__(methodName)
         self.data = path.join(CMAKE_BINARY_DIR, "data")
-        self.out = path.join(CMAKE_BINARY_DIR, "out", "integration")
+        self.out = path.join(CMAKE_BINARY_DIR, "out", "cli_tests")
         self.axe = path.join(CMAKE_BINARY_DIR, "bin", "axe-demux")
         self.log = logging.getLogger("AxeTest")
         if not path.exists(self.data) or not path.exists(self.axe):
-            print("Please run axe_integration.py after compiling axe")
+            print("Please run axe_cli_tests.py after compiling axe")
             exit(-1)
 
     def setUp(self):
