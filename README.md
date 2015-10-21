@@ -25,6 +25,13 @@ spirit of "release early and often", here it is.
 | Test Coverage     | [![Coverage Status](https://img.shields.io/coveralls/kdmurray91/axe.svg)](https://coveralls.io/r/kdmurray91/axe?branch=master) |
 | Coverity Scans    | [![Coverity Scan Build Status](https://scan.coverity.com/projects/2666/badge.svg)](https://scan.coverity.com/projects/2666) |
 
+Important Note
+--------------
+
+**For arcane reasons, the name of the ``axe`` binary changed to ``axe-demux``
+with version 0.3.0. Apologies for the inconvenience, this was required to
+make ``axe`` installable in Debian and its derivatives. Command-line usage
+did not change.**
 
 Installation:
 -------------
