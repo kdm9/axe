@@ -15,14 +15,13 @@ addons:
  apt:
   sources:
    - kalakris-cmake
-  pacakges:
+  packages:
    - cmake
    - lcov
    - libgsl0-dev
    - python
 
 install:
- - apt-get update && apt-get upgrade -yy
  - git submodule update --init
  - mkdir build
  - mkdir target
