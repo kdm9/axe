@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+import hashlib
 import logging
 import os
 from os import path
@@ -17,6 +18,17 @@ if len(sys.argv) < 2:
 CMAKE_BINARY_DIR = sys.argv.pop(1)
 
 
+def md5sum(filename):
+    h = hashlib.md5()
+    with open(filename, 'rb') as fh:
+        while True:
+            hunk = fh.read(1024 ** 2)
+            if not hunk:
+                break
+            h.update(hunk)
+    return h.hexdigest()
+
+
 class AxeTest(unittest.TestCase):
     maxDiff=  None
 
@@ -24,7 +36,7 @@ class AxeTest(unittest.TestCase):
         super(AxeTest, self).__init__(methodName)
         self.data = path.join(CMAKE_BINARY_DIR, "data")
         self.out = path.join(CMAKE_BINARY_DIR, "out", "integration")
-        self.axe = path.join(CMAKE_BINARY_DIR, "bin", "axe")
+        self.axe = path.join(CMAKE_BINARY_DIR, "bin", "axe-demux")
         self.log = logging.getLogger("AxeTest")
         if not path.exists(self.data) or not path.exists(self.axe):
             print("Please run axe_integration.py after compiling axe")
@@ -47,8 +59,7 @@ class AxeTest(unittest.TestCase):
         dct = {}
         for root, dirs, files in os.walk(self.out):
             for fle in files:
-                md5 = sp.check_output(["md5sum", path.join(root, fle)])
-                md5, fle = md5.strip().split()
+                md5 = md5sum(path.join(root, fle))
                 dct[path.basename(fle)] = md5
         return dct
 
