@@ -22,7 +22,8 @@
  * ============================================================================
  */
 
-#ifndef AXE_H #define AXE_H
+#ifndef AXE_H
+#define AXE_H
 
 #include <stdint.h>
 #include <stdlib.h>
