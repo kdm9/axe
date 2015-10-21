@@ -13,7 +13,10 @@ sudo: false
 
 addons:
  apt:
+  sources:
+   - kalakris-cmake
   pacakges:
+   - cmake
    - lcov
    - libgsl0-dev
    - python
