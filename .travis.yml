@@ -20,6 +20,7 @@ addons:
    - lcov
    - libgsl0-dev
    - python
+   - python-sphinx
 
 install:
  - pushd $HOME
