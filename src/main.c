@@ -30,7 +30,7 @@
 static void
 print_version(void)
 {
-    fprintf(stderr, "axe Version %s\n", AXE_VERSION);
+    fprintf(stderr, "AXE Version %s\n", AXE_VERSION);
 }
 
 static void
@@ -69,9 +69,9 @@ print_usage(void)
 {
     print_version();
     fprintf(stderr, "\nUSAGE:\n");
-    fprintf(stderr, "axe [-mzc2pt] -b (-f [-r] | -i) (-F [-R] | -I)\n");
-    fprintf(stderr, "axe -h\n");
-    fprintf(stderr, "axe -v\n\n");
+    fprintf(stderr, "axe-demux [-mzc2pt] -b (-f [-r] | -i) (-F [-R] | -I)\n");
+    fprintf(stderr, "axe-demux -h\n");
+    fprintf(stderr, "axe-demux -v\n\n");
     fprintf(stderr, "OPTIONS:\n");
     fprintf(stderr, "    -m, --mismatch\tMaximum hamming distance mismatch. [int, default 1]\n");
     fprintf(stderr, "    -z, --ziplevel\tGzip compression level, or 0 for plain text [int, default 0]\n");
