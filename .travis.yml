@@ -33,7 +33,7 @@ install:
 script:
  - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DCMAKE_BUILD_TYPE=$BUILD_TYPE
  - make
- - python ../tests/axe_integration.py  .
+ - python ../tests/axe_cli_tests.py  .
  - ./bin/test_axe
  - make install
- - test -f ../target/bin/axe
+ - test -f ../target/bin/axe-demux
