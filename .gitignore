@@ -5,6 +5,7 @@
 
 # compiled
 build
+*.pyc
 *.o
 *.a
 *.so
