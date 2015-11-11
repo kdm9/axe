@@ -18,7 +18,7 @@ IF(SPHINXBUILD)
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         )
     ADD_CUSTOM_TARGET(doc ALL DEPENDS doc_man doc_onehtml)
-    INSTALL(FILES ${CMAKE_BINARY_DIR}/doc/man/axe.1 DESTINATION "share/man/man1")
+    INSTALL(FILES ${CMAKE_BINARY_DIR}/doc/man/axe.1 DESTINATION "share/man/man1" RENAME "axe-demux.1")
     SET_DIRECTORY_PROPERTIES(PROPERTY ADDITIONAL_MAKE_CLEAN_FILES doc/)
 ELSE()
     MESSAGE(WARNING "Cannot build documenation, sphinx isn't installed")
