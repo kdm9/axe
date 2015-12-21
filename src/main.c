@@ -217,7 +217,7 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
         goto error;
     }
     if (config->mismatches > 4) {
-        fprintf(stderr, "ERROR: Silly mismatch level %" PRIu64 "\n",
+        fprintf(stderr, "ERROR: Silly mismatch level %zu\n",
                 config->mismatches);
         goto error;
     }
