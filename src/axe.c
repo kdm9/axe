@@ -1371,7 +1371,7 @@ hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
     size_t results = 0;
     size_t results_alloced = 64;
     size_t iii;
-    uint64_t *alphabet_indicies;
+    uintptr_t *alphabet_indicies;
     int alpha_ret = 0;
     gsl_combination *mut_idx_comb;
 
