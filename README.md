@@ -3,7 +3,9 @@ AXE
 
 > De-multiplex NGS reads using trie data structures. It's fast, and made of tries!
 
-[![DOI](https://zenodo.org/badge/6357/kdmurray91/axe.png)](https://zenodo.org/record/12278)
+
+
+[![DOI](https://zenodo.org/badge/6357/kdmurray91/axe.svg)](https://zenodo.org/badge/latestdoi/6357/kdmurray91/axe)
 [![Documentation Status](https://readthedocs.org/projects/axe-demultiplexer/badge/?version=latest)](https://readthedocs.org/projects/axe-demultiplexer/?badge=latest)
 [![Join the chat at https://gitter.im/axe-demultipexer/Lobby](https://badges.gitter.im/axe-demultipexer/Lobby.svg)](https://gitter.im/axe-demultipexer/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
