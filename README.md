@@ -20,9 +20,8 @@ spirit of "release early and often", here it is.
 
 ###Tests:
 
-| Jenkins GNU/Linux | [![Build Status](http://biojenkins.anu.edu.au/job/axe/badge/icon)](http://biojenkins.anu.edu.au/job/axe/) |
-| ----------------- | --- |
 | TravisCI          | [![Build Status](https://travis-ci.org/kdmurray91/axe.svg?branch=master)](https://travis-ci.org/kdmurray91/axe) |
+| ----------------- | --- |
 | Test Coverage     | [![Coverage Status](https://img.shields.io/coveralls/kdmurray91/axe.svg)](https://coveralls.io/r/kdmurray91/axe?branch=master) |
 | Coverity Scans    | [![Coverity Scan Build Status](https://scan.coverity.com/projects/2666/badge.svg)](https://scan.coverity.com/projects/2666) |
 
