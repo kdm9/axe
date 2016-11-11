@@ -45,26 +45,26 @@ axe_formatter(struct qes_log_entry *entry)
 
     if (entry->level <= QES_LOG_DEBUG) {
         marker = '.';
-        colour = ANSIBEG ATDIM FGCYN BGBLK ANSIEND;
+        colour = ANSIBEG ATDIM FGCYN ANSIEND;
         reset = "";
     } else if (entry->level == AXE_LOG_PROGRESS) {
         marker = progress_bar_chars[format_call_number++ % 4];
-        colour = ANSIBEG ATNRM FGGRN BGBLK ANSIEND;
+        colour = ANSIBEG ATNRM FGGRN ANSIEND;
     } else if (entry->level == AXE_LOG_BOLD) {
         marker = '\0';
-        colour = ANSIBEG ATBLD FGCYN BGBLK ANSIEND;
+        colour = ANSIBEG ATBLD FGCYN ANSIEND;
     } else if (entry->level <= QES_LOG_INFO) {
         marker = '\0';
-        colour = ANSIBEG ATNRM FGGRN BGBLK ANSIEND;
+        colour = ANSIBEG ATNRM FGGRN ANSIEND;
     } else if (entry->level <= QES_LOG_WARNING) {
         marker = '!';
-        colour = ANSIBEG ATULN FGYEL BGBLK ANSIEND;
+        colour = ANSIBEG ATBLD FGRED ANSIEND;
     } else if (entry->level <= QES_LOG_ERROR) {
         marker = 'E';
-        colour = ANSIBEG ATBLD FGMAG BGBLK ANSIEND;
+        colour = ANSIBEG ATBLD FGMAG ANSIEND;
     } else {
         marker = 'F';
-        colour = ANSIBEG ATBLD ATBNK FGRED BGBLK ANSIEND;
+        colour = ANSIBEG ATBLD  FGRED ANSIEND;
     }
     if (marker == '\0') {
         res = asprintf(&buf, "%s%s%s", colour, entry->message, reset);
@@ -1599,7 +1599,8 @@ axe_print_summary(const struct axe_config *config)
 {
     const char *tmp;
 
-#define million(r) ((float)(r / 1000000.0))
+#define hr(r) ((float)((r) / ((r) > 1000000.0 ? 1000000.0 : 1000.0)))
+#define unit(r) ((r) > 1000000.0 ? 'M' : 'K')
     if (!axe_config_ok(config)) {
         return -1;
     }
@@ -1614,15 +1615,17 @@ axe_print_summary(const struct axe_config *config)
     }
     tmp = config->out_mode == READS_SINGLE ? "reads" : "read pairs";
     axe_format_bold(config->logger,
-            "Processed %.2fM %s in %0.1f seconds (%0.1fK %s/sec)\n",
-            million(config->reads_processed), tmp, config->time_taken,
+            "Processed %.2f%c %s in %0.1f seconds (%0.1fK %s/sec)\n",
+            hr(config->reads_processed), unit(config->reads_processed), tmp, config->time_taken,
             (float)(config->reads_processed / 1000) / config->time_taken, tmp);
     axe_format_bold(config->logger,
-            "%.2fM %s contained valid barcodes\n",
-            million(config->reads_demultiplexed), tmp);
+            "%.2f%c %s contained valid barcodes\n",
+            hr(config->reads_demultiplexed), unit(config->reads_demultiplexed), tmp);
     axe_format_bold(config->logger,
-            "%.2fM %s could not be demultiplexed (%0.1f%%)\n",
-            million(config->reads_failed), tmp,
+            "%.2f%c %s could not be demultiplexed (%0.1f%%)\n",
+            hr(config->reads_failed), unit(config->reads_failed), tmp,
             ((float)config->reads_failed/(float)(config->reads_processed)*100.0));
     return 0;
+#undef hr
+#undef unit
 }
