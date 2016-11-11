@@ -1,49 +1,29 @@
 language: c
 
+sudo: required
+dist: trusty
+
 env:
- matrix:
   - BUILD_TYPE=Release
   - BUILD_TYPE=Debug
 
 compiler:
- - clang
- - gcc
-
-sudo: false
+  - clang
+  - gcc
 
 notifications:
   email:
-    - spam@kdmurray.id.au
-
-addons:
- apt:
-  sources:
-   - kalakris-cmake
-  packages:
-   - cmake
-   - lcov
-   - libgsl0-dev
-   - python
-   - python-sphinx
+    - kdmfoss@gmail.com
 
 install:
- - pushd $HOME
- - wget http://zlib.net/zlib-1.2.8.tar.xz
- - tar xvf zlib-1.2.8.tar.xz
- - cd zlib-1.2.8
- - ./configure --prefix=$HOME
- - make
- - make install
- - popd
- - git submodule update --init
+ - sudo apt-get install zlib1g-dev libgsl0-dev
  - mkdir build
  - mkdir target
- - cd build
 
 script:
+ - cd build
  - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DZLIB_ROOT=$HOME
  - make
- - python ../tests/axe_cli_tests.py  .
- - ./bin/test_axe
+ - ctest --verbose
  - make install
  - test -f ../target/bin/axe-demux
