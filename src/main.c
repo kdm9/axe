@@ -28,70 +28,70 @@
 #include <getopt.h>
 
 static void
-print_version(void)
+print_version(FILE *stream)
 {
-    fprintf(stderr, "AXE Version %s\n", AXE_VERSION);
+    fprintf(stream, "AXE Version %s\n", AXE_VERSION);
 }
 
 static void
-print_help(void)
+print_help(FILE *stream)
 {
-    fprintf(stderr, "All mandatory short options are mandatory in their\n");
-    fprintf(stderr, "long option form. Likewise, all short options that take\n");
-    fprintf(stderr, "an argument must be given an argument in their long form\n");
-    fprintf(stderr, "\n");
-    fprintf(stderr, "If a forward read input is given, a forward read output\n");
-    fprintf(stderr, "must be. Likewise for a reverse/interleaved input. If either\n");
-    fprintf(stderr, "forward and/or reverse reads are given, interleaved input\n");
-    fprintf(stderr, "cannot be. However, one can input interleaved paired reads\n");
-    fprintf(stderr, "and output separate forwards and reverse reads, and vice versa.\n");
-    fprintf(stderr, "\n");
-    fprintf(stderr, "The barcode file is a tab-separated tabular file with an\n");
-    fprintf(stderr, "optional header, and has two alternative formats. The standard\n");
-    fprintf(stderr, "form (see below) is expected unless --combinatorial is given.\n");
-    fprintf(stderr, "\n");
-    fprintf(stderr, "The standard format is:\n");
-    fprintf(stderr, "Barcode\tID\n");
-    fprintf(stderr, "ACTA\tA1\n");
-    fprintf(stderr, "CCTC\tA2\n");
-    fprintf(stderr, "...\n");
-    fprintf(stderr, "\n");
-    fprintf(stderr, "The combinatorial format is:\n");
-    fprintf(stderr, "Barcode1\tBarcode2\tID\n");
-    fprintf(stderr, "ACTA\tACGC\tA1\n");
-    fprintf(stderr, "CCTC\tTCTA\tA2\n");
-    fprintf(stderr, "...\n");
-    fprintf(stderr, "\n");
+    fprintf(stream, "All mandatory short options are mandatory in their\n");
+    fprintf(stream, "long option form. Likewise, all short options that take\n");
+    fprintf(stream, "an argument must be given an argument in their long form\n");
+    fprintf(stream, "\n");
+    fprintf(stream, "If a forward read input is given, a forward read output\n");
+    fprintf(stream, "must be. Likewise for a reverse/interleaved input. If either\n");
+    fprintf(stream, "forward and/or reverse reads are given, interleaved input\n");
+    fprintf(stream, "cannot be. However, one can input interleaved paired reads\n");
+    fprintf(stream, "and output separate forwards and reverse reads, and vice versa.\n");
+    fprintf(stream, "\n");
+    fprintf(stream, "The barcode file is a tab-separated tabular file with an\n");
+    fprintf(stream, "optional header, and has two alternative formats. The standard\n");
+    fprintf(stream, "form (see below) is expected unless --combinatorial is given.\n");
+    fprintf(stream, "\n");
+    fprintf(stream, "The standard format is:\n");
+    fprintf(stream, "Barcode\tID\n");
+    fprintf(stream, "ACTA\tA1\n");
+    fprintf(stream, "CCTC\tA2\n");
+    fprintf(stream, "...\n");
+    fprintf(stream, "\n");
+    fprintf(stream, "The combinatorial format is:\n");
+    fprintf(stream, "Barcode1\tBarcode2\tID\n");
+    fprintf(stream, "ACTA\tACGC\tA1\n");
+    fprintf(stream, "CCTC\tTCTA\tA2\n");
+    fprintf(stream, "...\n");
+    fprintf(stream, "\n");
 }
 
 static void
-print_usage(void)
+print_usage(FILE *stream)
 {
-    print_version();
-    fprintf(stderr, "\nUSAGE:\n");
-    fprintf(stderr, "axe-demux [-mzc2pt] -b (-f [-r] | -i) (-F [-R] | -I)\n");
-    fprintf(stderr, "axe-demux -h\n");
-    fprintf(stderr, "axe-demux -v\n\n");
-    fprintf(stderr, "OPTIONS:\n");
-    fprintf(stderr, "    -m, --mismatch\tMaximum hamming distance mismatch. [int, default 1]\n");
-    fprintf(stderr, "    -z, --ziplevel\tGzip compression level, or 0 for plain text [int, default 0]\n");
-    fprintf(stderr, "    -c, --combinatorial\tUse combinatorial barcode matching. [flag, default OFF]\n");
-    fprintf(stderr, "    -p, --permissive\tDon't error on barcode mismatch confict, matching only\n");
-    fprintf(stderr, "                    \texactly for conficting barcodes. [flag, default OFF]\n");
-    fprintf(stderr, "    -2, --trim-r2\tTrim barcode from R2 read as well as R1. [flag, default OFF]\n");
-    fprintf(stderr, "    -b, --barcodes\tBarcode file. See --help for example. [file]\n");
-    fprintf(stderr, "    -f, --fwd-in\tInput forward read. [file]\n");
-    fprintf(stderr, "    -F, --fwd-out\tOutput forward read prefix. [file]\n");
-    fprintf(stderr, "    -r, --rev-in\tInput reverse read. [file]\n");
-    fprintf(stderr, "    -R, --rev-out\tOutput reverse read prefix. [file]\n");
-    fprintf(stderr, "    -i, --ilfq-in\tInput interleaved paired reads. [file]\n");
-    fprintf(stderr, "    -I, --ilfq-out\tOutput interleaved paired reads prefix. [file]\n");
-    fprintf(stderr, "    -t, --table-file\tOutput a summary table of demultiplexing statistics to file. [file]\n");
-    fprintf(stderr, "    -h, --help\t\tPrint this usage plus additional help.\n");
-    fprintf(stderr, "    -V, --version\tPrint version string.\n");
-    fprintf(stderr, "    -v, --verbose\tBe more verbose. Additive, -vv is more vebose than -v.\n");
-    fprintf(stderr, "    -q, --quiet\t\tBe very quiet.\n");
-    fprintf(stderr, "\n");
+    print_version(stream);
+    fprintf(stream, "\nUSAGE:\n");
+    fprintf(stream, "axe-demux [-mzc2pt] -b (-f [-r] | -i) (-F [-R] | -I)\n");
+    fprintf(stream, "axe-demux -h\n");
+    fprintf(stream, "axe-demux -v\n\n");
+    fprintf(stream, "OPTIONS:\n");
+    fprintf(stream, "    -m, --mismatch\tMaximum hamming distance mismatch. [int, default 1]\n");
+    fprintf(stream, "    -z, --ziplevel\tGzip compression level, or 0 for plain text [int, default 0]\n");
+    fprintf(stream, "    -c, --combinatorial\tUse combinatorial barcode matching. [flag, default OFF]\n");
+    fprintf(stream, "    -p, --permissive\tDon't error on barcode mismatch confict, matching only\n");
+    fprintf(stream, "                    \texactly for conficting barcodes. [flag, default OFF]\n");
+    fprintf(stream, "    -2, --trim-r2\tTrim barcode from R2 read as well as R1. [flag, default OFF]\n");
+    fprintf(stream, "    -b, --barcodes\tBarcode file. See --help for example. [file]\n");
+    fprintf(stream, "    -f, --fwd-in\tInput forward read. [file]\n");
+    fprintf(stream, "    -F, --fwd-out\tOutput forward read prefix. [file]\n");
+    fprintf(stream, "    -r, --rev-in\tInput reverse read. [file]\n");
+    fprintf(stream, "    -R, --rev-out\tOutput reverse read prefix. [file]\n");
+    fprintf(stream, "    -i, --ilfq-in\tInput interleaved paired reads. [file]\n");
+    fprintf(stream, "    -I, --ilfq-out\tOutput interleaved paired reads prefix. [file]\n");
+    fprintf(stream, "    -t, --table-file\tOutput a summary table of demultiplexing statistics to file. [file]\n");
+    fprintf(stream, "    -h, --help\t\tPrint this usage plus additional help.\n");
+    fprintf(stream, "    -V, --version\tPrint version string.\n");
+    fprintf(stream, "    -v, --verbose\tBe more verbose. Additive, -vv is more vebose than -v.\n");
+    fprintf(stream, "    -q, --quiet\t\tBe very quiet.\n");
+    fprintf(stream, "\n");
 }
 
 static const char *axe_opts = "m:z:c2pb:f:F:r:R:i:I:t:hVvqd";
@@ -121,11 +121,12 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
 {
     int c = 0;
     int optind = 0;
+    bool fullhelp = false;
 
     if (argc < 2 ) {
-        return 1;
+        goto printhelp;
     }
-    if (!axe_config_ok(config) || argc < 1 || argv == NULL) {
+    if (!axe_config_ok(config) || argv == NULL) {
         goto error;
     }
     /* Set some sane defaults */
@@ -193,7 +194,8 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
                 config->table_file = strdup(optarg);
                 break;
             case 'h':
-                goto help;
+                fullhelp = true;
+                goto printhelp;
             case 'V':
                 goto version;
             case 'v':
@@ -339,11 +341,13 @@ error:
             "Axe failed due to bad CLI flags. Consult the usage below please!\n\n");
     config->have_cli_opts = false;
     return 1;
-help:
-    config->have_cli_opts = false;
-    return 2;
+printhelp:
+    print_usage(stdout);
+    if (fullhelp) print_help(stdout);
+    axe_config_destroy(config);
+    exit(0);
 version:
-    print_version();
+    print_version(stdout);
     axe_config_destroy(config);
     exit(0);
 }
@@ -360,10 +364,7 @@ main (int argc, char * const *argv)
     }
     ret = parse_args(config, argc, argv);
     if (ret != 0) {
-        print_usage();
-        if (ret == 2) {
-            print_help();
-        }
+        print_usage(stderr);
         goto end;
     }
     ret = axe_read_barcodes(config);
