@@ -25,6 +25,8 @@
 #ifndef AXE_H
 #define AXE_H
 
+#include "axe_config.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -38,7 +40,6 @@
 
 #include "datrie/trie.h"
 #include "datrie/alpha-map.h"
-#include "axe_config.h"
 
 /* General rules:
  *  Most functions are declared as `int X(...);`. These functions return:
@@ -107,11 +108,11 @@ struct axe_config {
     uint64_t reads_failed;
     float time_taken;
     int verbosity;
-    int have_cli_opts           :1; /* Set to 1 once CLI is parsed */
-    int match_combo             :1; /* Match using combinatorial strategy */
-    int permissive              :1; /* Don't error on mutated bcd confict */
-    int trim_rev                :1; /* Trim rev read same as fwd read */
-    int debug                   :1; /* Enable debug mode */
+    bool have_cli_opts; /* Set to 1 once CLI is parsed */
+    bool match_combo;   /* Match using combinatorial strategy */
+    bool permissive;    /* Don't error on mutated bcd confict */
+    bool trim_rev;      /* Trim rev read same as fwd read */
+    bool debug;         /* Enable debug mode */
 };
 
 extern unsigned int format_call_number;
