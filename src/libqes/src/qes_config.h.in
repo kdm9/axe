@@ -33,7 +33,7 @@
 #ifndef QES_CONFIG_H
 #define QES_CONFIG_H
 
-#define LIBQES_VERSION "${LIBQES_VERSION}";
+#define LIBQES_VERSION "${LIBQES_VERSION}"
 #cmakedefine GETLINE_FOUND
 #cmakedefine STRNDUP_FOUND
 #cmakedefine ZLIB_FOUND
