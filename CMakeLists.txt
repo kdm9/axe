@@ -61,6 +61,19 @@ ENABLE_TESTING()
 SET(CPACK_GENERATOR "TGZ;TBZ2")
 INCLUDE(CPack)
 
+##########################
+## Set Compiler Options ##
+##########################
+
+
+SET(WARN_FLAGS "${WARN_FLAGS} -Wall -Wextra -Wpedantic")
+
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -D_GNU_SOURCE ${WARN_FLAGS}")
+
+SET(CMAKE_C_FLAGS_DEBUG "-ggdb")
+SET(CMAKE_C_FLAGS_RELEASE "-O3")
+
+
 ###############################
 ## Find Packages and Headers ##
 ###############################
@@ -108,17 +121,12 @@ SET(LIBQES_DEPENDS_CFLAGS
     ${ZLIB_CFLAGS}
     ${OpenMP_C_FLAGS})
 
-##########################
-## Set Compiler Options ##
-##########################
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBQES_DEPENDS_CFLAGS}")
 
 
-SET(WARN_FLAGS "${WARN_FLAGS} -Wall -Wextra -Wpedantic")
-
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBQES_DEPENDS_CFLAGS} -std=gnu99 -D_GNU_SOURCE ${WARN_FLAGS}")
-
-SET(CMAKE_C_FLAGS_DEBUG "-ggdb")
-SET(CMAKE_C_FLAGS_RELEASE "-O3")
+#####################
+## Set CMake Paths ##
+#####################
 
 # Set include dirs
 INCLUDE_DIRECTORIES(
