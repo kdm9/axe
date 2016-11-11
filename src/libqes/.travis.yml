@@ -1,26 +1,24 @@
 language: c
 
+sudo: required
+dist: trusty
+
 env:
- - BUILD_TYPE=Release
- - BUILD_TYPE=Debug
- - BUILD_TYPE=Coverage
+  - BUILD_TYPE=Release
+  - BUILD_TYPE=Debug
+  - BUILD_TYPE=Coverage
 
 compiler:
- - clang
- - gcc
+  - clang
+  - gcc
+
+notifications:
+  email:
+    - kdmfoss@gmail.com
 
 install:
- - sudo apt-get install lcov python-pip
- - mkdir zlib && cd zlib
- - wget http://zlib.net/zlib-1.2.8.tar.gz
- - tar xvxf zlib-1.2.8.tar.gz
- - cd zlib-1.2.8
- - ./configure
- - make
- - sudo make install
- - cd ../..
+ - sudo apt-get install lcov python-pip zlib1g-dev
  - sudo pip install cpp-coveralls
- - git submodule update --init
  - mkdir build
  - mkdir target
  - cd build
@@ -31,7 +29,6 @@ script:
  - ctest --verbose
  - make install
  - test -f ../target/include/qes.h
- - if [ $static == "TRUE" ] ; then test -f ../target/lib/libqes.a; else test -f ../target/lib/libqes.so ; fi
 
 after_success:
  - cd ..
