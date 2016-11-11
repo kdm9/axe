@@ -1,3 +1,0 @@
-[submodule "src/libqes"]
-	path = src/libqes
-	url = https://github.com/kdmurray91/libqes.git
