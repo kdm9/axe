@@ -134,4 +134,6 @@ LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/lib)
 
 # Traverse to library source and tests
 ADD_SUBDIRECTORY(src)
-ADD_SUBDIRECTORY(test)
+if (NOT LIBQES_AS_SUBMODULE)
+    ADD_SUBDIRECTORY(test)
+endif()
