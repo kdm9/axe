@@ -328,7 +328,7 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
                 break;
         }
     }
-    config->have_cli_opts = 1;
+    config->have_cli_opts = true;
     format_call_number = 0;
     qes_logger_init(config->logger, "[axe] ", QES_LOG_DEBUG);
     qes_logger_add_destination_formatted(config->logger, stderr, QES_LOG_DEBUG,
@@ -337,10 +337,10 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
 error:
     fprintf(stderr,
             "Axe failed due to bad CLI flags. Consult the usage below please!\n\n");
-    config->have_cli_opts = 0;
+    config->have_cli_opts = false;
     return 1;
 help:
-    config->have_cli_opts = 0;
+    config->have_cli_opts = false;
     return 2;
 version:
     print_version();

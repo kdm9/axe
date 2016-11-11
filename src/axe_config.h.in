@@ -25,6 +25,8 @@
 #ifndef AXE_CONFIG_H
 #define AXE_CONFIG_H
 
+#define _GNU_SOURCE
+
 #define AXE_VERSION "${AXE_VERSION}"
 
 #endif /* AXE_CONFIG_H */

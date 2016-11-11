@@ -43,32 +43,15 @@ ENDIF()
 ## Set Compiler Options ##
 ##########################
 
-IF (CMAKE_COMPILER_IS_GNUCC)
-        SET(AXEWRN "${AXEWRN} -Woverride-init -Wnormalized=id -Wlogical-op")
-        EXECUTE_PROCESS(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-                        OUTPUT_VARIABLE GCC_VERSION)
-        IF (GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9)
-                SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
-        ENDIF()
-ENDIF()
-
 # Set CFLAGS
-SET(AXEWRN "${AXEWRN} -fstack-protector-all -Wstack-protector -Wfloat-equal")
-SET(AXEWRN "${AXEWRN} -Wundef -Wpointer-arith -Wstrict-prototypes")
-SET(AXEWRN "${AXEWRN} -Wmissing-prototypes -Wwrite-strings -Wredundant-decls")
-SET(AXEWRN "${AXEWRN} -Wchar-subscripts -Wcomment -Wformat=2 -Wwrite-strings")
-SET(AXEWRN "${AXEWRN} -Wmissing-declarations -Wredundant-decls -Wnested-externs")
-SET(AXEWRN "${AXEWRN} -Wbad-function-cast -Wswitch-enum -Winit-self")
-SET(AXEWRN "${AXEWRN} -Wmissing-field-initializers -Wdeclaration-after-statement")
-SET(AXEWRN "${AXEWRN} -Wold-style-definition -Waddress -Wmissing-noreturn ")
-SET(AXEWRN "${AXEWRN} -Wstrict-overflow=1 -Wextra -Warray-bounds -Wall -D_FORTIFY_SOURCE=2")
+SET(AXEWRN "${AXEWRN} -fstack-protector-all -Wstack-protector")
+SET(AXEWRN "${AXEWRN} -Wall -Wextra -Wpedantic")
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${AXEWRN}")
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src
                     ${CMAKE_SOURCE_DIR}/src/datrie
-                    ${CMAKE_SOURCE_DIR}/src/libqes/src
                     ${CMAKE_SOURCE_DIR}/src/gsl)
 LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/lib)
 
