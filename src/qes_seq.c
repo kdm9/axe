@@ -186,7 +186,7 @@ qes_seq_destroy_(struct qes_seq *seq)
     }
 }
 
-inline void
+static inline void
 _printstr_linewrap(const struct qes_str *str, size_t linelen, FILE *stream)
 {
 
