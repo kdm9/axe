@@ -50,6 +50,7 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${AXEWRN}")
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src
                     ${CMAKE_SOURCE_DIR}/src/datrie
+                    ${CMAKE_SOURCE_DIR}/src/libqes/src
                     ${CMAKE_SOURCE_DIR}/src/gsl)
 LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/lib)
 
