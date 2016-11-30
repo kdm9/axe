@@ -13,6 +13,7 @@ builddir=$(mktemp -d)
 cd $builddir
 tar xvf /io/axe_${AXE_VERSION}.tar --strip-components=1
 
+rm -rf build
 mkdir build
 cd build
 
