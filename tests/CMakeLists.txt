@@ -1,7 +1,7 @@
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/tinytest)
 
 ADD_EXECUTABLE(test_axe test.c ${CMAKE_CURRENT_SOURCE_DIR}/tinytest/tinytest.c test_libaxe.c)
-TARGET_LINK_LIBRARIES(test_axe ${AXE_DEPENDS_LIBRARIES} axelib)
+TARGET_LINK_LIBRARIES(test_axe ${AXE_DEPENDS_LIBRARIES} axelib qes_static)
 
 # Copy test files over to bin dir & make output
 ADD_CUSTOM_TARGET(setup_tests ALL
