@@ -7,12 +7,12 @@ srcdir=$PWD
 wkdir=$(mktemp -d)
 
 trap "rm -rf $wkdir" EXIT
-trap "cd $srcdir && git stash pop" EXIT
 
 set -x
 
 git stash -u
 tar cvf $wkdir/axe_${version}.tar .
+git stash pop
 
 cd $wkdir
 
