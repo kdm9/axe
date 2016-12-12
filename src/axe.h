@@ -96,8 +96,8 @@ struct axe_config {
     size_t n_barcodes_2; /* Number of second read barcodes */
     size_t n_barcode_pairs;
     struct axe_output *unknown_output; /* output for unknown files */
-    struct axe_trie *fwd_trie;
-    struct axe_trie *rev_trie;
+    struct axe_trie **fwd_tries;
+    struct axe_trie **rev_tries;
     struct qes_logger *logger;
     enum read_mode in_mode;
     enum read_mode out_mode;
@@ -270,8 +270,10 @@ int axe_write_table(const struct axe_config *config);
 int axe_print_summary(const struct axe_config *config);
 
 /* Libraries or inner functions */
-extern int axe_match_read(struct axe_config *config, intptr_t *value,
-                          struct axe_trie *trie, const struct qes_seq *seq);
+
+extern int axe_match_read(struct axe_trie **tries, size_t num_tries,
+                          const struct qes_seq *seq,  intptr_t *bcd_idx);
+
 int product(int64_t len, int64_t elem, uintptr_t *choices, int at_start);
 char **hamming_mutate_dna(size_t *n_results_o, const char *str, size_t len,
                           unsigned int dist, int keep_original);

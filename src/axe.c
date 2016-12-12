@@ -32,6 +32,31 @@ char _time_now[10] = "";
 const char *progress_bar_chars = "|/-\\";
 unsigned int format_call_number;
 
+/*******************************************************************************
+*                            Stupid debugging shit                            *
+*******************************************************************************/
+
+bool
+print_rec(const AlphaChar *key, TrieData value, void *extra)
+{
+    (void) extra;
+    printf("\t'%s' -> %zu\n", key, value);
+    return true;
+}
+
+
+void
+dump_trie(const Trie *trie, const char *name)
+{
+    printf("Dump of trie '%s'\n", name);
+    trie_enumerate(trie, &print_rec, NULL);
+    printf("Dump of trie '%s' -- done\n", name);
+}
+
+/*******************************************************************************
+*                             End debuggging shit                             *
+*******************************************************************************/
+
 char *
 axe_formatter(struct qes_log_entry *entry)
 {
@@ -153,8 +178,16 @@ axe_config_destroy_(struct axe_config *config)
     }
     qes_free(config->barcode_lookup);
     /* Tries */
-    axe_trie_destroy(config->fwd_trie);
-    axe_trie_destroy(config->rev_trie);
+    for (size_t i = 0; i <= config->mismatches; i++) {
+        if (config->fwd_tries != NULL) {
+            axe_trie_destroy(config->fwd_tries[i]);
+        }
+        if (config->rev_tries != NULL) {
+            axe_trie_destroy(config->rev_tries[i]);
+        }
+    }
+    qes_free(config->fwd_tries);
+    qes_free(config->rev_tries);
     /* Logger */
     qes_logger_destroy(config->logger);
     /* config stuct */
@@ -515,14 +548,34 @@ axe_make_tries(struct axe_config *config)
     if (!axe_config_ok(config)) {
         return -1;
     }
-    config->fwd_trie = axe_trie_create();
-    if (config->fwd_trie == NULL) {
+    config->fwd_tries = qes_calloc(config->mismatches + 1, sizeof(*config->fwd_tries));
+    if (config->fwd_tries == NULL) {
         goto error;
     }
-    if (config->match_combo) {
-        config->rev_trie = axe_trie_create();
-        if (config->rev_trie == NULL) {
+    for (size_t i = 0; i <= config->mismatches; i++) {
+        config->fwd_tries[i] = axe_trie_create();
+        if (config->fwd_tries[i] == NULL) {
+            while (i > 0) {
+                axe_trie_destroy(config->fwd_tries[--i]);
+            }
+            qes_free(config->fwd_tries);
             goto error;
+        }
+    }
+    if (config->match_combo) {
+        config->rev_tries = qes_calloc(config->mismatches + 1, sizeof(*config->rev_tries));
+        if (config->rev_tries == NULL) {
+            goto error;
+        }
+        for (size_t i = 0; i <= config->mismatches; i++) {
+            config->rev_tries[i] = axe_trie_create();
+            if (config->rev_tries[i] == NULL) {
+                while (i > 0) {
+                    axe_trie_destroy(config->rev_tries[--i]);
+                }
+                qes_free(config->rev_tries);
+                goto error;
+            }
         }
     }
     return 0;
@@ -531,10 +584,19 @@ error:
     qes_log_message_fatal(
             config->logger,
             "make_tries -- ERROR: axe_trie_create returned NULL\n");
-    axe_trie_destroy(config->fwd_trie);
-    if (config->match_combo) {
-        axe_trie_destroy(config->rev_trie);
+    if (config->fwd_tries != NULL) {
+        for (size_t i = 0; i <= config->mismatches; i++) {
+            axe_trie_destroy(config->fwd_tries[i]);
+        }
+        qes_free(config->fwd_tries);
     }
+    if (config->rev_tries != NULL) {
+        for (size_t i = 0; i <= config->mismatches; i++) {
+            axe_trie_destroy(config->rev_tries[i]);
+        }
+        qes_free(config->rev_tries);
+    }
+
     return 1;
 }
 
@@ -579,7 +641,7 @@ load_tries_combo(struct axe_config *config)
     size_t jjj = 0;
     size_t mmm = 0;
     struct axe_barcode *this_bcd = NULL;
-    intptr_t tmp = 0;
+    intptr_t tmp_intptr = 0;
 
     if (!axe_config_ok(config)) {
         fprintf(stderr, "[load_tries] Bad config\n");
@@ -598,8 +660,8 @@ load_tries_combo(struct axe_config *config)
         /* Either lookup the index of the first read in the barcode table, or
          * insert this barcode into the table, storing its index.
          * Note the NOT here. */
-        if (!axe_trie_get(config->fwd_trie, this_bcd->seq1, &tmp)) {
-            ret = axe_trie_add(config->fwd_trie, this_bcd->seq1, ++bcd1);
+        if (!axe_trie_get(config->fwd_tries[0], this_bcd->seq1, &tmp_intptr)) {
+            ret = axe_trie_add(config->fwd_tries[0], this_bcd->seq1, ++bcd1);
             if (ret != 0) {
                 qes_log_format_fatal(config->logger,
                         "load_tries -- Could not load barcode %s into trie %zu\n",
@@ -619,7 +681,7 @@ load_tries_combo(struct axe_config *config)
                 goto exit;
             }
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->fwd_trie, mutated[mmm], bcd1);
+                ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], bcd1);
                 if (ret != 0) {
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
@@ -627,7 +689,7 @@ load_tries_combo(struct axe_config *config)
                                 "load_tries -- warning: Will only match to %dmm\n",
                                  (int)jjj - 1);
                         }
-                        axe_trie_delete(config->fwd_trie, mutated[mmm]);
+                        axe_trie_delete(config->fwd_tries[jjj], mutated[mmm]);
                         qes_free(mutated[mmm]);
                         continue;
                     }
@@ -646,8 +708,8 @@ load_tries_combo(struct axe_config *config)
     for (iii = 0; iii < config->n_barcode_pairs; iii++) {
         this_bcd = config->barcodes[iii];
         /* Likewise for the reverse read index */
-        if (!axe_trie_get(config->rev_trie, this_bcd->seq2, &tmp)) {
-            ret = axe_trie_add(config->rev_trie, this_bcd->seq2, ++bcd2);
+        if (!axe_trie_get(config->rev_tries[0], this_bcd->seq2, &tmp_intptr)) {
+            ret = axe_trie_add(config->rev_tries[0], this_bcd->seq2, ++bcd2);
             if (ret != 0) {
                 qes_log_format_fatal(config->logger,
                         "load_tries -- Could not load barcode %s into trie %zu\n",
@@ -667,7 +729,7 @@ load_tries_combo(struct axe_config *config)
                 goto exit;
             }
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->rev_trie, mutated[mmm], bcd2);
+                ret = axe_trie_add(config->rev_tries[jjj], mutated[mmm], bcd2);
                 if (ret != 0) {
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
@@ -675,7 +737,7 @@ load_tries_combo(struct axe_config *config)
                                 "load_tries -- Will only match %s to %dmm\n",
                                 this_bcd->id, (int)jjj - 1);
                         }
-                        trie_delete(config->rev_trie->trie,
+                        trie_delete(config->rev_tries[jjj]->trie,
                                     mutated[mmm]);
                         qes_free(mutated[mmm]);
                         continue;
@@ -731,8 +793,8 @@ load_tries_single(struct axe_config *config)
         /* Either lookup the index of the first read in the barcode table, or
          * insert this barcode into the table, storing its index.
          * Note the NOT here. */
-        if (!axe_trie_get(config->fwd_trie, this_bcd->seq1, &tmp)) {
-            ret = axe_trie_add(config->fwd_trie, this_bcd->seq1, (int)iii);
+        if (!axe_trie_get(config->fwd_tries[0], this_bcd->seq1, &tmp)) {
+            ret = axe_trie_add(config->fwd_tries[0], this_bcd->seq1, (int)iii);
             if (ret != 0) {
                 fprintf(stderr,
                         "ERROR: Could not load barcode %s into trie %zu\n",
@@ -751,7 +813,7 @@ load_tries_single(struct axe_config *config)
                 goto exit;
             }
             for (mmm = 0; mmm < num_mutated; mmm++) {
-                ret = axe_trie_add(config->fwd_trie, mutated[mmm], iii);
+                ret = axe_trie_add(config->fwd_tries[jjj], mutated[mmm], iii);
                 if (ret != 0) {
                     if (config->permissive) {
                         if (config->verbosity >= 0) {
@@ -759,7 +821,7 @@ load_tries_single(struct axe_config *config)
                                     "[%s] warning: Will only match to %dmm\n",
                                     __func__, (int)jjj - 1);
                         }
-                        trie_delete(config->fwd_trie->trie,
+                        trie_delete(config->fwd_tries[jjj]->trie,
                                     mutated[mmm]);
                         qes_free(mutated[mmm]);
                         continue;
@@ -1005,14 +1067,17 @@ process_read_pair_single(struct axe_config *config, struct qes_seq *seq1,
                         struct qes_seq *seq2)
 {
     int ret = 0;
-    ssize_t bcd = -1;
+    intptr_t bcd = -1;
     size_t barcode_pair_index = 0;
     struct axe_output *outfile = NULL;
     size_t bcd_len = 0;
 
-    ret = axe_match_read(config, &bcd, config->fwd_trie, seq1);
     increment_reads_print_progress(config);
+    ret = axe_match_read(config->fwd_tries, config->mismatches + 1, seq1, &bcd);
     if (ret != 0) {
+        return -1;
+    }
+    if (bcd == -1) {
         /* No match */
         qes_seqfile_write(config->unknown_output->fwd_file, seq1);
         if (seq2 != NULL) {
@@ -1186,10 +1251,13 @@ process_read_pair_combo(struct axe_config *config, struct qes_seq *seq1,
     size_t bcd2_len = 0;
     struct axe_output *outfile = NULL;
 
-    r1_ret = axe_match_read(config, &bcd1, config->fwd_trie, seq1);
-    r2_ret = axe_match_read(config, &bcd2, config->rev_trie, seq2);
     increment_reads_print_progress(config);
+    r1_ret = axe_match_read(config->fwd_tries, config->mismatches + 1, seq1, &bcd1);
+    r2_ret = axe_match_read(config->rev_tries, config->mismatches + 1, seq2, &bcd2);
     if (r1_ret != 0 || r2_ret != 0) {
+        return -1;
+    }
+    if (bcd1 < 0 || bcd2 < 0) {
         /* No match */
         qes_seqfile_write(config->unknown_output->fwd_file, seq1);
         if (config->out_mode == READS_INTERLEAVED) {
@@ -1485,29 +1553,29 @@ axe_trie_add(struct axe_trie *trie, const char *str, intptr_t data)
     return 1;
 }
 
-inline int
-axe_match_read (struct axe_config *config, ssize_t *value,
-                struct axe_trie *trie, const struct qes_seq *seq)
+static inline int
+axe_match_read_trie (struct axe_trie *trie, const struct qes_seq *seq, ssize_t *bcd_idx)
 {
     TrieState *trie_iter = NULL;
     TrieState *last_good_state = NULL;
     size_t seq_pos = 0;
 
-    /* value is set to -1 on anything bad happening including failed lookup */
-    if (value == NULL || !axe_trie_ok(trie) || !qes_seq_ok(seq)) {
+    if (bcd_idx == NULL) {
         return -1;
     }
-    /* Set *value here, then we just don't update it on error */
-    *value = -1;
+    /* bcd_idx is set to -1 on anything bad happening including failed lookup */
+    *bcd_idx = -1;
+    if (!axe_trie_ok(trie) || !qes_seq_ok(seq)) {
+        return -1;
+    }
+
     if (seq->seq.len < trie->min_len) {
-        return 1;
+        return 0;
     }
     /* Only look until the maximum of the largest barcode, or seq len */
     /* Grab tree root iter, and check it. */
     trie_iter = trie_root(trie->trie);
     if (trie_iter == NULL) {
-        qes_log_message_fatal(config->logger,
-                              "match_read -- trie_root() returned NULL!\n");
         return -1;
     }
     /* Consume seq until we can't */
@@ -1524,13 +1592,13 @@ axe_match_read (struct axe_config *config, ssize_t *value,
     if (trie_state_is_terminal(trie_iter)) {
         trie_state_walk(trie_iter, '\0');
         trie_state_free(last_good_state);
-        *value =  (ssize_t) trie_state_get_data(trie_iter);
+        *bcd_idx =  (ssize_t) trie_state_get_data(trie_iter);
         trie_state_free(trie_iter);
         return 0;
     } else if (last_good_state != NULL) {
         trie_state_free(trie_iter);
         trie_state_walk(last_good_state, '\0');
-        *value =  (ssize_t) trie_state_get_data(last_good_state);
+        *bcd_idx =  (ssize_t) trie_state_get_data(last_good_state);
         trie_state_free(last_good_state);
         return 0;
     }
@@ -1538,8 +1606,38 @@ axe_match_read (struct axe_config *config, ssize_t *value,
     if (last_good_state != NULL) {
         trie_state_free(last_good_state);
     }
-    return 1;
+    return 0;
 }
+
+inline int
+axe_match_read(struct axe_trie **tries, size_t num_tries,
+               const struct qes_seq *seq,  intptr_t *bcd_idx)
+{
+    intptr_t our_bcd_idx = -1;
+    int res = 0;
+
+    if (tries == NULL || bcd_idx == NULL || seq == NULL) return 1;
+
+    *bcd_idx = -1;
+    for (size_t i = 0; i < num_tries; i++) {
+        res = axe_match_read_trie(tries[i], seq, &our_bcd_idx);
+        if (res == 0) {
+            if (our_bcd_idx > 0) {
+                *bcd_idx = our_bcd_idx;
+                return 0;
+            }
+        } else {
+            // axe_match_read_trie returns non-zero only on failure, but NOT if
+            // we can't match the string. bcd_idx == -1 is used to indicate that.
+            // If we get res != 0, then we stuffed up, and there's no point
+            // continuing.
+            return -1;
+        }
+    }
+    return 0;
+}
+
+
 
 int
 axe_write_table(const struct axe_config *config)
