@@ -3,7 +3,7 @@
  *
  *       Filename:  axe_main.c
  *    Description:  Main loop for axe
- *      Copyright:  2014-2015 Kevin Murray <spam@kdmurray.id.au>
+ *      Copyright:  2014-2016 Kevin Murray <kdmfoss@gmail.com>
  *        License:  GNU GPL v3+
  *
  * This program is free software: you can redistribute it and/or modify it
