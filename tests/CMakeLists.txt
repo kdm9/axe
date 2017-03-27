@@ -73,7 +73,7 @@ IF (CMAKE_BUILD_TYPE STREQUAL "Coverage")
 
 		# Capturing lcov counters and generating report
 		COMMAND ${LCOV_PATH} --rc lcov_branch_coverage=1 --directory ${CMAKE_BINARY_DIR}/src --capture --output-file ${COVERAGE_OUT}.info
-		COMMAND ${LCOV_PATH} --rc lcov_branch_coverage=1 --output-file ${COVERAGE_OUT}.info --remove ${COVERAGE_OUT}.info src/kmlib/*
+		COMMAND ${LCOV_PATH} --rc lcov_branch_coverage=1 --output-file ${COVERAGE_OUT}.info --remove ${COVERAGE_OUT}.info src/libqes/*
 		COMMAND ${LCOV_PATH} --rc lcov_branch_coverage=1 --output-file ${COVERAGE_OUT}.info --remove ${COVERAGE_OUT}.info src/datrie/*
 		COMMAND ${GENHTML_PATH} --branch-coverage -o ${COVERAGE_OUT} ${COVERAGE_OUT}.info
 		COMMAND ${CMAKE_COMMAND} -E remove ${COVERAGE_OUT}.info
