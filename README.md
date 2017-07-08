@@ -113,7 +113,7 @@ See also TODO.md
 Publication
 -----------
 
-A publication is coming soon, if the reviewer gods decide to smile upon us.
+We have a preprint describing AXE up at http://www.biorxiv.org/content/early/2017/07/07/160606
 
 Versioning
 ----------
