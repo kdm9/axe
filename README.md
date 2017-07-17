@@ -97,18 +97,6 @@ Full documentation, including a basic description of the algorithm, is hosted
 at https://axe-demultiplexer.readthedocs.org/en/latest/ .
 
 
-Implementation Progress:
-------------------------
-
- - [x] Single ended read de-multiplexing
- - [x] Interleaved/Paired input and output with single-ended de-multiplexing
- - [x] Combinatorial de-multiplexing
- - [ ] CLI integration tests
- - [ ] Comprehensive `libaxe` tests
- - [ ] Comprehensive CLI tests
-
-See also TODO.md
-
 
 Publication
 -----------
