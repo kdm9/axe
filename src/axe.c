@@ -24,6 +24,9 @@
 
 #include "axe.h"
 #include "gsl_combination.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 /* Holds the current timestamp, so we don't have to free the returned string
  * from now(). */
@@ -169,16 +172,15 @@ _axe_format_outfile_path (const char *prefix, const char *id, int read,
     char buf[4096];
     int res = 0;
     char *our_prefix = NULL;
-    char lastchr = '\0';
     size_t prefix_len = 0;
+    struct stat statbuff;
 
     if (prefix == NULL || id == NULL) {
         return NULL;
     }
 
     prefix_len = strlen(prefix);
-    lastchr = prefix[prefix_len - 1];
-    if (lastchr == '/' || lastchr == '\\') {
+    if (stat(prefix, &statbuff) == 0 && S_ISDIR(statbuff.st_mode)) {
         /* Our prefix is a directory, don't add '_' */
         our_prefix = strdup(prefix);
     } else {
