@@ -18,6 +18,7 @@ For concise reference, the command-line usage of ``axe-demux`` is reproduced
 below:
 
 .. literalinclude:: usage.txt
+   :language: text
 
 Inputs and Outputs
 ------------------

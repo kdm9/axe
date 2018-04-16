@@ -17,7 +17,7 @@ IF(SPHINXBUILD)
 	COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/doc"
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         )
-    ADD_CUSTOM_TARGET(doc ALL DEPENDS doc_man doc_onehtml)
+    ADD_CUSTOM_TARGET(doc ALL DEPENDS doc_man doc_html doc_onehtml)
     INSTALL(FILES ${CMAKE_BINARY_DIR}/doc/man/axe.1 DESTINATION "share/man/man1" RENAME "axe-demux.1")
     SET_DIRECTORY_PROPERTIES(PROPERTY ADDITIONAL_MAKE_CLEAN_FILES doc/)
 ELSE()

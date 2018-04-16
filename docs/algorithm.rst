@@ -46,7 +46,7 @@ referred to  as the 0, 1 and 2-mm tries, for a hamming distance (mismatch) of
 trie. If this prefix is not a valid leaf in the 0mm trie, we find the longest
 prefix in the 1mm trie, and so on for all tries in ascending order. If no
 prefix of the read is a complete sequence in any trie, the read is assigned to
-an "non-indexd" output file.
+an "non-indexed" output file.
 
 This algorithm ensures optimal index matching in many ways, but is also
 extremely fast. In situations with indexes of differing length, we ensure that

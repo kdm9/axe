@@ -2,12 +2,10 @@
 Axe Tutorial
 ************
 
-**TODO!**
-
 In this tutorial, we'll use Axe to demultiplex some paired-end,
 combinatorially-index Genotyping-by-Sequencing reads. The data for this
-tutorial is available from figshare
-`here https://figshare.com/articles/axe-tutorial_tar/6143720`_.
+tutorial is available from figshare:
+https://figshare.com/articles/axe-tutorial_tar/6143720 .
 
 Axe should be run as the initial step of any analysis: don't use sequence QC
 tools like AdapterRemoval or Trimmomatic before using axe, as indexes may be
@@ -54,7 +52,7 @@ Then, we need to ensure that axe has somewhere to put the demultiplexed reads.
 Axe outputs one file (or more, depending on pairing) per sample. Axe does so by
 appending the sample name to some prefix (as given by the ``-I``, ``-F``,
 and/or ``-R`` options). If this prefix is a directory, then sample fastq files
-will be created in that subdirectory, but the directory must exist. Let's make
+will be created in that sub-directory, but the directory must exist. Let's make
 an output directory:
 
 .. code-block:: bash
