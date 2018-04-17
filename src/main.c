@@ -81,11 +81,11 @@ print_usage(FILE *stream)
     fprintf(stream, "    -2, --trim-r2\tTrim barcode from R2 read as well as R1. [flag, default OFF]\n");
     fprintf(stream, "    -b, --barcodes\tBarcode file. See --help for example. [file]\n");
     fprintf(stream, "    -f, --fwd-in\tInput forward read. [file]\n");
-    fprintf(stream, "    -F, --fwd-out\tOutput forward read prefix. [file]\n");
+    fprintf(stream, "    -F, --fwd-out\tOutput forward read prefix. [file prefix or existing directory]\n");
     fprintf(stream, "    -r, --rev-in\tInput reverse read. [file]\n");
-    fprintf(stream, "    -R, --rev-out\tOutput reverse read prefix. [file]\n");
+    fprintf(stream, "    -R, --rev-out\tOutput reverse read prefix. [file prefix or existing directory]\n");
     fprintf(stream, "    -i, --ilfq-in\tInput interleaved paired reads. [file]\n");
-    fprintf(stream, "    -I, --ilfq-out\tOutput interleaved paired reads prefix. [file]\n");
+    fprintf(stream, "    -I, --ilfq-out\tOutput interleaved paired reads prefix. [file prefix or existing directory]\n");
     fprintf(stream, "    -t, --table-file\tOutput a summary table of demultiplexing statistics to file. [file]\n");
     fprintf(stream, "    -h, --help\t\tPrint this usage plus additional help.\n");
     fprintf(stream, "    -V, --version\tPrint version string.\n");

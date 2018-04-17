@@ -12,13 +12,14 @@ OPTIONS:
     -2, --trim-r2	Trim barcode from R2 read as well as R1. [flag, default OFF]
     -b, --barcodes	Barcode file. See --help for example. [file]
     -f, --fwd-in	Input forward read. [file]
-    -F, --fwd-out	Output forward read prefix. [file]
+    -F, --fwd-out	Output forward read prefix. [file prefix or existing directory]
     -r, --rev-in	Input reverse read. [file]
-    -R, --rev-out	Output reverse read prefix. [file]
+    -R, --rev-out	Output reverse read prefix. [file prefix or existing directory]
     -i, --ilfq-in	Input interleaved paired reads. [file]
-    -I, --ilfq-out	Output interleaved paired reads prefix. [file]
+    -I, --ilfq-out	Output interleaved paired reads prefix. [file prefix or existing directory]
     -t, --table-file	Output a summary table of demultiplexing statistics to file. [file]
     -h, --help		Print this usage plus additional help.
     -V, --version	Print version string.
     -v, --verbose	Be more verbose. Additive, -vv is more vebose than -v.
     -q, --quiet		Be very quiet.
+
