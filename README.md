@@ -10,22 +10,25 @@ AXE
 [![Join the chat at https://gitter.im/axe-demultipexer/Lobby](https://badges.gitter.im/axe-demultipexer/Lobby.svg)](https://gitter.im/axe-demultipexer/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
-AXE very rapidly selects the optimal barcode present in a sequence read, even
+AXE very rapidly selects the optimal index present in a sequence read, even
 in the presence of sequencing errors. The algorithm is able to handle
-combinatorial barcoding, barcodes of differing length, and several mismatches
-per barcode. Early results indicate far improved accuracy and speed over
+combinatorial indexing, indexes of differing length, and several mismatches
+per index. Early results indicate far improved accuracy and speed over
 existing de-multiplexers. Unscientific trials show AXE processes more than
 500,000 reads per second.
 
-**Warning**: Axe has not yet been comprehensively tested. However, in the
-spirit of "release early and often", here it is.
 
-### Tests:
+Quick Start
+-----------
 
-| TravisCI          | [![Build Status](https://travis-ci.org/kdmurray91/axe.svg?branch=master)](https://travis-ci.org/kdmurray91/axe) |
-| ----------------- | --- |
-| Test Coverage     | [![Coverage Status](https://img.shields.io/coveralls/kdmurray91/axe.svg)](https://coveralls.io/r/kdmurray91/axe?branch=master) |
-| Coverity Scans    | [![Coverity Scan Build Status](https://scan.coverity.com/projects/2666/badge.svg)](https://scan.coverity.com/projects/2666) |
+To install on UNIX-like systems (Mac, Linux), get the dependencies (zlib and cmake, see below), and:
+
+    git clone --recursive https://github.com/kdmurray91/axe.git axe
+    cd axe
+    cmake .
+    sudo make install
+
+A tutorial on the usage of Axe is available at <https://axe-demultiplexer.readthedocs.org/en/latest/>, along with full documentation and a basic description of the algorithm.
 
 Important Note
 --------------
@@ -34,6 +37,7 @@ Important Note
 with version 0.3.0. Apologies for the inconvenience, this was required to
 make ``axe`` installable in Debian and its derivatives. Command-line usage
 did not change.**
+
 
 Installation:
 -------------
@@ -44,14 +48,6 @@ possible, I just don't have machines available to test. Please report any
 installation issues on any system as GitHub bugs and I'll do my best to sort
 them out.
 
-In short, on *NIX, get the dependencies (see below), and:
-
-    git clone --recursive https://github.com/kdmurray91/axe.git axe
-    cd axe
-    mkdir -p build && cd build
-    cmake ..
-    make
-    sudo make install
 
 To install to a prefix, as you would with `./configure --prefix` with the
 autotools build system, please use the following cmake command in place of the
@@ -67,7 +63,7 @@ For me, using `~/` as the prefix will install `axe` under `/home/kevin/bin` on
 GNU/Linux, and (if I had one) `/Users/kevin/bin` on Mac OSX.It's also wise to
 use `make install` not `sudo make install` when installing to a home directory.
 
-###Dependencies:
+### Dependencies:
 
 - cmake. This is installable via `sudo apt-get install cmake` on Debian based
   systems, or `brew install cmake` using homebrew on OS X.
@@ -88,14 +84,6 @@ supercomputers, which often have very old versions of zlib. To do so:
 And then, use the following cmake command, assuming your prefix is `~/`:
 
     cmake -DCMAKE_INSTALL_PREFIX=$HOME -DZLIB_ROOT=$HOME ..
-
-
-Usage:
-------
-
-Full documentation, including a basic description of the algorithm, is hosted
-at https://axe-demultiplexer.readthedocs.org/en/latest/ .
-
 
 
 Publication
