@@ -73,7 +73,7 @@ print_usage(FILE *stream)
     fprintf(stream, "axe-demux -h\n");
     fprintf(stream, "axe-demux -v\n\n");
     fprintf(stream, "OPTIONS:\n");
-    fprintf(stream, "    -m, --mismatch\tMaximum hamming distance mismatch. [int, default 1]\n");
+    fprintf(stream, "    -m, --mismatch\tMaximum hamming distance mismatch. [int, default 0]\n");
     fprintf(stream, "    -z, --ziplevel\tGzip compression level, or 0 for plain text [int, default 0]\n");
     fprintf(stream, "    -c, --combinatorial\tUse combinatorial barcode matching. [flag, default OFF]\n");
     fprintf(stream, "    -p, --permissive\tDon't error on barcode mismatch confict, matching only\n");
@@ -132,7 +132,7 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
     /* Set some sane defaults */
     /* Most things will default to 0 as we `calloc` the config struct, so we
      * don't need to explicity set them. */
-    config->mismatches = 1;
+    config->mismatches = 0;
     config->verbosity = 0;
     config->out_compress_level = 0;
     /* Parse argv using getopt */
