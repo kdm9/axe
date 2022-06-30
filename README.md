@@ -89,7 +89,8 @@ And then, use the following cmake command, assuming your prefix is `~/`:
 Publication
 -----------
 
-We have a preprint describing AXE up at http://www.biorxiv.org/content/early/2017/07/07/160606
+We have a paper describing AXE published in Bioinformatics https://academic.oup.com/bioinformatics/article/34/22/3924/5026649
+A [PDF is available](https://raw.githubusercontent.com/kdm9/axe-paper/master/oxford-final/axe-formatted.pdf?token=GHSAT0AAAAAABVH27O27FSFX47CB5FAUFZ6YV5NNQA)
 
 Versioning
 ----------
