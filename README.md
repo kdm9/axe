@@ -23,7 +23,7 @@ Quick Start
 
 ### `conda`
 
-![](https://img.shields.io/badge/Anaconda.org-0.3.3-blue.svg?style=flat-square)
+[![](https://img.shields.io/badge/Anaconda.org-0.3.3-blue.svg?style=flat-square)](https://anaconda.org/kdm801/axe-demultiplexer/)
 
 ```
 mamba install -c kdm801 axe-demultiplexer
