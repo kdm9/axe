@@ -21,6 +21,17 @@ existing de-multiplexers. Unscientific trials show AXE processes more than
 Quick Start
 -----------
 
+### `conda`
+
+https://img.shields.io/badge/Anaconda.org-0.3.3-blue.svg?style=flat-square
+
+```
+mamba install -c kdm801 axe-demultiplexer
+```
+
+
+### From source
+
 To install on UNIX-like systems (Mac, Linux), get the dependencies (zlib and cmake, see below), and:
 
     git clone --recursive https://github.com/kdmurray91/axe.git axe
