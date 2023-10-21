@@ -13,7 +13,7 @@ AXE
 AXE very rapidly selects the optimal index present in a sequence read, even
 in the presence of sequencing errors. The algorithm is able to handle
 combinatorial indexing, indexes of differing length, and several mismatches
-per index. Early results indicate far improved accuracy and speed over
+per index. Benchmarking results indicate far improved accuracy and speed over
 existing de-multiplexers. Unscientific trials show AXE processes more than
 500,000 reads per second.
 
