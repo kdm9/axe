@@ -187,7 +187,7 @@ _axe_format_outfile_path (const char *prefix, const char *id, int read,
         /* Duplicate and append an underscore to prefix */
         our_prefix = qes_malloc(prefix_len + 2);
         our_prefix[prefix_len + 1] = '\0';
-        strncpy(our_prefix, prefix, prefix_len);
+        strncpy(our_prefix, prefix, prefix_len+1);
         our_prefix[prefix_len] = '_';
     }
 
