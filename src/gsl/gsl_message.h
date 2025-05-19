@@ -47,7 +47,7 @@ void gsl_message(const char * message, const char * file, int line,
 #define GSL_MESSAGE_MASK 0xffffffffu /* default all messages allowed */
 #endif
 
-unsigned int gsl_message_mask ;
+extern unsigned int gsl_message_mask ;
 
 /* Provide some symolic masks for client ease of use. */
 
