@@ -19,7 +19,7 @@ ADD_TEST(NAME "UnitTests" COMMAND test_axe)
 SET(COVERAGE_CMD test_axe)
 SET(COVERAGE_OUT "${CMAKE_BINARY_DIR}/coverage_html")
 
-ADD_TEST(NAME "IntegrationTests" COMMAND python
+ADD_TEST(NAME "IntegrationTests" COMMAND python3
          ${CMAKE_BINARY_DIR}/bin/axe_cli_tests.py
          ${CMAKE_BINARY_DIR})
 

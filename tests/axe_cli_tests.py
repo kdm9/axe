@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
 import hashlib
 import logging
 import os
@@ -130,16 +129,6 @@ class TestPareSE(AxeTest):
         self.assertDictEqual(files, self.get_md5_dict())
 
 class TestFakeSE(AxeTest):
-    files = {
-        'fake_se_1_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
-        'fake_se_2_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
-        'fake_se_unknown_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
-    }
-    zfiles = {
-        'fake_se_1_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
-        'fake_se_2_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
-        'fake_se_unknown_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
-    }
 
     def __init__(self, methodName='runTest'):
         super(TestFakeSE, self).__init__(methodName)
@@ -147,40 +136,62 @@ class TestFakeSE(AxeTest):
         self.outfq = path.join(self.out, "fake_se")
         self.nobcdfq = path.join(self.out, "fake_se_unknown_R1.fastq")
 
-    def _do_test(self, mm_level):
+    def _do_test(self, mm_level, mismatch=0):
         infq = path.join(self.data, "fake_{}mm_R1.fq.gz".format(mm_level))
         command = [self.axe,
             "-f", infq,
             "-F", self.outfq,
             '-b', self.barcodes,
+            '-m', str(mismatch),
         ]
         self.assertTrue(self.run_and_check_stdout(command))
 
-    def _do_test_zip(self, mm_level):
+    def _do_test_zip(self, mm_level, mismatch=0):
         infq = path.join(self.data, "fake_{}mm_R1.fq.gz".format(mm_level))
         command = [self.axe,
             "-f", infq,
             "-F", self.outfq,
             '-b', self.barcodes,
+            '-m', str(mismatch),
             '-z', '9',
         ]
         self.assertTrue(self.run_and_check_stdout(command))
 
     def test_fake_se_0mm(self):
         self._do_test(0)
-        self.assertDictEqual(self.files, self.get_md5_dict())
+        files = {
+            'fake_se_1_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+            'fake_se_2_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+            'fake_se_unknown_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+        }
+        self.assertDictEqual(files, self.get_md5_dict())
 
     def test_fake_se_0mm_zip(self):
         self._do_test_zip(0)
-        self.assertDictEqual(self.zfiles, self.get_md5_dict())
+        files = {
+            'fake_se_1_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
+            'fake_se_2_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
+            'fake_se_unknown_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
+        }
+        self.assertDictEqual(files, self.get_md5_dict())
 
     def test_fake_se_1mm(self):
-        self._do_test(1)
-        self.assertDictEqual(self.files, self.get_md5_dict())
+        self._do_test(1, mismatch=1)
+        files = {
+            'fake_se_1_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+            'fake_se_2_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+            'fake_se_unknown_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+        }
+        self.assertDictEqual(files, self.get_md5_dict())
 
     def test_fake_se_1mm_zip(self):
-        self._do_test_zip(1)
-        self.assertDictEqual(self.zfiles, self.get_md5_dict())
+        self._do_test_zip(1, mismatch=1)
+        files = {
+            'fake_se_1_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
+            'fake_se_2_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
+            'fake_se_unknown_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
+        }
+        self.assertDictEqual(files, self.get_md5_dict())
 
     def test_fake_se_2mm(self):
         self._do_test(2)
@@ -193,12 +204,12 @@ class TestFakeSE(AxeTest):
 
     def test_fake_se_2mm_zip(self):
         self._do_test_zip(2)
-        zfiles = {
+        files = {
             'fake_se_1_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
             'fake_se_2_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
             'fake_se_unknown_R1.fastq.gz': 'ee6979b139dbd898f058fd7649f87da2',
         }
-        self.assertDictEqual(zfiles, self.get_md5_dict())
+        self.assertDictEqual(files, self.get_md5_dict())
 
 
 if __name__ == '__main__':
