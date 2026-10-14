@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import gzip
 import hashlib
 import logging
 import os
@@ -19,14 +20,22 @@ CMAKE_BINARY_DIR = sys.argv.pop(1)
 
 
 def md5sum(filename):
+    """md5 of a file's contents, un-gzipped if need be (compressed bytes
+    differ between zlib implementations)."""
     h = hashlib.md5()
-    with open(filename, 'rb') as fh:
+    opener = gzip.open if filename.endswith('.gz') else open
+    with opener(filename, 'rb') as fh:
         while True:
             hunk = fh.read(1024 ** 2)
             if not hunk:
                 break
             h.update(hunk)
     return h.hexdigest()
+
+
+def gz(files):
+    """Expected md5s (of contents) of the gzipped version of some outputs"""
+    return {name + '.gz': md5 for name, md5 in files.items()}
 
 
 class AxeTest(unittest.TestCase):
@@ -79,6 +88,19 @@ class TestBadUsage(AxeTest):
 
 
 class TestPareSE(AxeTest):
+    FILES = {
+        'pare_se_1_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
+        'pare_se_2_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
+        'pare_se_3_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
+        'pare_se_4_R1.fastq': '8e5eef3323e597b209f79dc9fcd74c9a',
+        'pare_se_5_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
+        'pare_se_6_R1.fastq': '7228a165f353920328360dedc3a41205',
+        'pare_se_7_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
+        'pare_se_8_R1.fastq': 'b349d3276ba7c7515d0093b1a49b3959',
+        'pare_se_9_R1.fastq': '74b4763271aefcc135425b06730874ba',
+        'pare_se_unknown_R1.fastq': 'd450569dd8fd4bdddffbfaeec4980273',
+    }
+
     def __init__(self, methodName='runTest'):
         super(TestPareSE, self).__init__(methodName)
         self.infq = path.join(self.data, "pare.fq.gz")
@@ -93,19 +115,7 @@ class TestPareSE(AxeTest):
             '-b', self.barcodes,
         ]
         self.assertTrue(self.run_and_check_stdout(command))
-        files = {
-            'pare_se_1_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
-            'pare_se_2_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
-            'pare_se_3_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
-            'pare_se_4_R1.fastq': '8e5eef3323e597b209f79dc9fcd74c9a',
-            'pare_se_5_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
-            'pare_se_6_R1.fastq': '7228a165f353920328360dedc3a41205',
-            'pare_se_7_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
-            'pare_se_8_R1.fastq': 'b349d3276ba7c7515d0093b1a49b3959',
-            'pare_se_9_R1.fastq': '74b4763271aefcc135425b06730874ba',
-            'pare_se_unknown_R1.fastq': 'd450569dd8fd4bdddffbfaeec4980273',
-        }
-        self.assertDictEqual(files, self.get_md5_dict())
+        self.assertDictEqual(self.FILES, self.get_md5_dict())
 
     def test_pare_se_zip(self):
         command = [self.axe,
@@ -114,20 +124,8 @@ class TestPareSE(AxeTest):
             '-b', self.barcodes,
             '-z', '9',
         ]
-        files = {
-            'pare_se_1_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
-            'pare_se_2_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
-            'pare_se_3_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
-            'pare_se_4_R1.fastq.gz': '96d21b860a0fc70641ea43d350433d11',
-            'pare_se_5_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
-            'pare_se_6_R1.fastq.gz': 'd6044c04f79c358e4a1d443f8828df18',
-            'pare_se_7_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
-            'pare_se_8_R1.fastq.gz': 'da77b8e95827d362a1702ce4fe75c7a9',
-            'pare_se_9_R1.fastq.gz': '9c160b0daa0c73e5ef0994206774a5a0',
-            'pare_se_unknown_R1.fastq.gz': 'afd5737935814d756e89c365d2d61c7b',
-        }
         self.assertTrue(self.run_and_check_stdout(command))
-        self.assertDictEqual(files, self.get_md5_dict())
+        self.assertDictEqual(gz(self.FILES), self.get_md5_dict())
 
 class TestFakeSE(AxeTest):
 
@@ -169,11 +167,11 @@ class TestFakeSE(AxeTest):
 
     def test_fake_se_0mm_zip(self):
         self._do_test_zip(0)
-        files = {
-            'fake_se_1_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
-            'fake_se_2_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
-            'fake_se_unknown_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
-        }
+        files = gz({
+            'fake_se_1_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+            'fake_se_2_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+            'fake_se_unknown_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+        })
         self.assertDictEqual(files, self.get_md5_dict())
 
     def test_fake_se_1mm(self):
@@ -187,11 +185,11 @@ class TestFakeSE(AxeTest):
 
     def test_fake_se_1mm_zip(self):
         self._do_test_zip(1, mismatch=1)
-        files = {
-            'fake_se_1_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
-            'fake_se_2_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
-            'fake_se_unknown_R1.fastq.gz': '3e07353d24a3ecd315067250a6be6047',
-        }
+        files = gz({
+            'fake_se_1_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+            'fake_se_2_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+            'fake_se_unknown_R1.fastq': '836eaf06938d4a41122f284ed487a9c7',
+        })
         self.assertDictEqual(files, self.get_md5_dict())
 
     def test_fake_se_2mm(self):
@@ -205,11 +203,11 @@ class TestFakeSE(AxeTest):
 
     def test_fake_se_2mm_zip(self):
         self._do_test_zip(2)
-        files = {
-            'fake_se_1_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
-            'fake_se_2_R1.fastq.gz': '4a4dd3598707603b3f76a2378a4504aa',
-            'fake_se_unknown_R1.fastq.gz': 'ee6979b139dbd898f058fd7649f87da2',
-        }
+        files = gz({
+            'fake_se_1_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
+            'fake_se_2_R1.fastq': 'd41d8cd98f00b204e9800998ecf8427e',
+            'fake_se_unknown_R1.fastq': 'a6de105b6c5abbc2d0d16440333adc64',
+        })
         self.assertDictEqual(files, self.get_md5_dict())
 
 
