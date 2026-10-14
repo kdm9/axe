@@ -43,6 +43,7 @@ qes_logger_init(struct qes_logger  *logger,
     if (logger == NULL) return 1;
 
     if (name != NULL) {
+        free(logger->name);
         logger->name = strdup(name);
     } else if (logger->name != NULL) {
         free(logger->name);
@@ -116,7 +117,7 @@ qes_log_entry_format_va(struct qes_log_entry   *entry,
 
     /* Format the error message w/ user input */
     res = vasprintf(&message, format, args);
-    if (res < 1) {
+    if (res < 0) {
         /* Alloc inside vasprintf failed */
         return 1;
     }

@@ -132,7 +132,7 @@ qes_seq_fill_header (struct qes_seq *seqobj, char *header, size_t len)
     if (len < 1) {
         len = strlen(header);
     }
-    while (isspace(header[len-1])) {
+    while (len > 0 && isspace((unsigned char)header[len-1])) {
         header[--len] = '\0';
     }
     tmp = memchr(header, ' ', len);

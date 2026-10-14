@@ -48,48 +48,102 @@ end:
     ;
 }
 
+/* Number of positions at which two equal-length strings differ */
+static size_t
+hamming(const char *a, const char *b)
+{
+    size_t d = 0;
+
+    for (; *a != '\0' && *b != '\0'; a++, b++) {
+        d += (*a != *b);
+    }
+    return d;
+}
+
 static void
 test_hamming_mutate (void *ptr)
 {
     char **mutated = NULL;
     size_t count = 0;
     size_t iii = 0;
-    const char *str = "AAAA";
-    const char *truth[] = {
-        "AAAA", "ACAA", "AGAA", "ATAA", "CAAA", "CCAA", "CGAA", "CTAA", "GAAA",
-        "GCAA", "GGAA", "GTAA", "TAAA", "TCAA", "TGAA", "TTAA", "AAAA", "AACA",
-        "AAGA", "AATA", "CAAA", "CACA", "CAGA", "CATA", "GAAA", "GACA", "GAGA",
-        "GATA", "TAAA", "TACA", "TAGA", "TATA", "AAAA", "AAAC", "AAAG", "AAAT",
-        "CAAA", "CAAC", "CAAG", "CAAT", "GAAA", "GAAC", "GAAG", "GAAT", "TAAA",
-        "TAAC", "TAAG", "TAAT", "AAAA", "AACA", "AAGA", "AATA", "ACAA", "ACCA",
-        "ACGA", "ACTA", "AGAA", "AGCA", "AGGA", "AGTA", "ATAA", "ATCA", "ATGA",
-        "ATTA", "AAAA", "AAAC", "AAAG", "AAAT", "ACAA", "ACAC", "ACAG", "ACAT",
-        "AGAA", "AGAC", "AGAG", "AGAT", "ATAA", "ATAC", "ATAG", "ATAT", "AAAA",
-        "AAAC", "AAAG", "AAAT", "AACA", "AACC", "AACG", "AACT", "AAGA", "AAGC",
-        "AAGG", "AAGT", "AATA", "AATC", "AATG", "AATT", };
+    size_t jjj = 0;
+    const char *str = "ACGT";
 
     (void) ptr;
+    /* dist 2 of a 4-mer: C(4,2) * 3^2 = 54 strings, plus the original */
     mutated  = hamming_mutate_dna(&count, str, strlen(str), 2, 1);
     tt_ptr_op(mutated, !=, NULL);
-    tt_int_op(count, ==, 96);
-    for (iii = 0; iii < count; iii++) {
+    tt_int_op(count, ==, 55);
+    tt_str_op(mutated[0], ==, str);
+    for (iii = 1; iii < count; iii++) {
         tt_ptr_op(mutated[iii], !=, NULL);
-        tt_str_op(mutated[iii], ==, truth[iii]);
+        /* Exactly dist mismatches, and no duplicates */
+        tt_int_op(hamming(mutated[iii], str), ==, 2);
+        for (jjj = 0; jjj < iii; jjj++) {
+            tt_str_op(mutated[iii], !=, mutated[jjj]);
+        }
     }
+    for (iii = 0; iii < count; iii++) {
+        free(mutated[iii]);
+    }
+    free(mutated);
+
+    /* Without the original, and dist 1: 4 * 3 */
+    mutated  = hamming_mutate_dna(&count, str, strlen(str), 1, 0);
+    tt_ptr_op(mutated, !=, NULL);
+    tt_int_op(count, ==, 12);
+    for (iii = 0; iii < count; iii++) {
+        tt_int_op(hamming(mutated[iii], str), ==, 1);
+    }
+    for (iii = 0; iii < count; iii++) {
+        free(mutated[iii]);
+    }
+    free(mutated);
+    mutated = NULL;
+
+    /* Can't have more mismatches than bases */
+    tt_ptr_op(hamming_mutate_dna(&count, "AC", 2, 3, 0), ==, NULL);
 
 end:
-    if (mutated != NULL) {
-        for (iii = 0; iii < count; iii++) {
-            if (mutated[iii] != NULL) {
-                free(mutated[iii]);
-            }
-        }
-        free(mutated);
-    }
+    ;
+}
+
+static void
+test_revcomp (void *ptr)
+{
+    char odd[] = "AACGT";
+    char even[] = "AACG";
+    char junk[] = "ACxT\n";
+    char *rc = NULL;
+
+    (void) ptr;
+    qes_sequtil_revcomp_inplace(odd, strlen(odd));
+    tt_str_op(odd, ==, "ACGTT");
+    qes_sequtil_revcomp_inplace(even, strlen(even));
+    tt_str_op(even, ==, "CGTT");
+    /* trailing whitespace is trimmed, other bases become N */
+    qes_sequtil_revcomp_inplace(junk, strlen(junk));
+    tt_str_op(junk, ==, "ANGT");
+    /* len larger than the string must not run off its end */
+    rc = qes_sequtil_revcomp("AACGT", 100);
+    tt_ptr_op(rc, !=, NULL);
+    tt_str_op(rc, ==, "ACGTT");
+    free(rc);
+    /* len smaller than the string uses only the first len bases */
+    rc = qes_sequtil_revcomp("AACGT", 3);
+    tt_ptr_op(rc, !=, NULL);
+    tt_str_op(rc, ==, "GTT");
+    free(rc);
+    rc = qes_sequtil_revcomp("", 5);
+    tt_ptr_op(rc, !=, NULL);
+    tt_str_op(rc, ==, "");
+end:
+    free(rc);
 }
 
 struct testcase_t core_tests[] = {
     { "product", test_product, 0, NULL, NULL},
     { "hamming_mutate", test_hamming_mutate, 0, NULL, NULL},
+    { "revcomp", test_revcomp, 0, NULL, NULL},
     END_OF_TESTCASES
 };

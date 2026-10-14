@@ -231,42 +231,61 @@ qes_sequtil_translate_codon (const char *codon)
 }
 
 
-inline char *
+static inline char
+qes_sequtil_complement (char base)
+{
+    switch (base) {
+        case 'a': case 'A': return 'T';
+        case 'c': case 'C': return 'G';
+        case 'g': case 'G': return 'C';
+        case 't': case 'T': return 'A';
+        default: return 'N';
+    }
+}
+
+/* Reverse complement of (at most) the first ``len`` bases of ``seq``, in a
+ * newly malloc'd string. Trailing whitespace is trimmed. */
+char *
 qes_sequtil_revcomp (const char *seq, size_t len)
 {
-    size_t seqlen = strlen(seq);
-    char *outseq = strdup(seq);
-    seqlen = seqlen < len ? seqlen : len - 1;
+    size_t seqlen = 0;
+    char *outseq = NULL;
 
-    if (outseq[seqlen - 1] == '\n') {
-        outseq[seqlen - 1] = '\0';
-        seqlen--;
+    if (seq == NULL) {
+        return NULL;
     }
-
-    qes_sequtil_revcomp_inplace(outseq, len);
+    seqlen = strlen(seq);
+    if (len < seqlen) {
+        seqlen = len;
+    }
+    outseq = qes_malloc(seqlen + 1);
+    memcpy(outseq, seq, seqlen);
+    outseq[seqlen] = '\0';
+    qes_sequtil_revcomp_inplace(outseq, seqlen);
     return outseq;
 }
 
-inline void
+/* Reverse complement the first ``len`` bytes of ``seq`` in place. Trailing
+ * whitespace is trimmed (and replaced by NULs). Non-ACGT bases become N. */
+void
 qes_sequtil_revcomp_inplace (char *seq, size_t len)
 {
     size_t iii;
+
+    if (seq == NULL) {
+        return;
+    }
     /* Trim trailing whitespace */
-    while (len > 0 && isspace(seq[len - 1])) {
+    while (len > 0 && isspace((unsigned char)seq[len - 1])) {
         seq[--len] = '\0';
     }
-    for (iii = 0; iii < len && seq[iii] != '\0'; iii++) {
-        size_t endpos = len - iii - 1;
-        char endchar = seq[endpos];
-        if (seq[iii] == 'a' || seq[iii] == 'A') seq[endpos] = 'T';
-        else if (seq[iii] == 'c' || seq[iii] == 'C') seq[endpos] = 'G';
-        else if (seq[iii] == 'g' || seq[iii] == 'G') seq[endpos] = 'C';
-        else if (seq[iii] == 't' || seq[iii] == 'T') seq[endpos] = 'A';
-        else seq[endpos] = 'N';
-        if (endchar == 'a' || endchar == 'A') seq[iii] = 'T';
-        else if (endchar == 'c' || endchar == 'C') seq[iii] = 'G';
-        else if (endchar == 'g' || endchar == 'G') seq[iii] = 'C';
-        else if (endchar == 't' || endchar == 'T') seq[iii] = 'A';
-        else seq[iii] = 'N';
+    for (iii = 0; iii < len / 2; iii++) {
+        const size_t endpos = len - iii - 1;
+        const char front = qes_sequtil_complement(seq[iii]);
+        seq[iii] = qes_sequtil_complement(seq[endpos]);
+        seq[endpos] = front;
+    }
+    if (len % 2 == 1) {
+        seq[len / 2] = qes_sequtil_complement(seq[len / 2]);
     }
 }

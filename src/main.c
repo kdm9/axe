@@ -71,7 +71,7 @@ print_usage(FILE *stream)
     fprintf(stream, "\nUSAGE:\n");
     fprintf(stream, "axe-demux [-mzc2pt] -b (-f [-r] | -i) (-F [-R] | -I)\n");
     fprintf(stream, "axe-demux -h\n");
-    fprintf(stream, "axe-demux -v\n\n");
+    fprintf(stream, "axe-demux -V\n\n");
     fprintf(stream, "OPTIONS:\n");
     fprintf(stream, "    -m, --mismatch\tMaximum hamming distance mismatch. [int, default 0]\n");
     fprintf(stream, "    -z, --ziplevel\tGzip compression level, or 0 for plain text [int, default 0]\n");
@@ -96,7 +96,7 @@ print_usage(FILE *stream)
 
 static const char *axe_opts = "m:z:c2pb:f:F:r:R:i:I:t:hVvqd";
 static const struct option axe_longopts[] = {
-    { "mismatch",   optional_argument,  NULL,   'm' },
+    { "mismatch",   required_argument,  NULL,   'm' },
     { "ziplevel",   required_argument,  NULL,   'z' },
     { "combinatorial", no_argument,     NULL,   'c' },
     { "trim-r2",    no_argument,        NULL,   '2' },
@@ -124,7 +124,10 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
     bool fullhelp = false;
 
     if (argc < 2 ) {
-        goto printhelp;
+        /* Nothing to do: that's a usage error, not a request for help */
+        print_usage(stderr);
+        axe_config_destroy(config);
+        exit(1);
     }
     if (!axe_config_ok(config) || argv == NULL) {
         goto error;
@@ -138,12 +141,30 @@ parse_args(struct axe_config *config, int argc, char * const *argv)
     /* Parse argv using getopt */
     while ((c = getopt_long(argc, argv, axe_opts, axe_longopts, &optind)) > 0){
         switch (c) {
-            case 'm':
-                config->mismatches = atol(optarg);
+            case 'm': {
+                char *end = NULL;
+                long mm = strtol(optarg, &end, 10);
+
+                if (end == optarg || *end != '\0' || mm < 0) {
+                    fprintf(stderr, "ERROR: Bad mismatch level '%s'\n",
+                            optarg);
+                    goto error;
+                }
+                config->mismatches = (size_t)mm;
                 break;
-            case 'z':
-                config->out_compress_level = atoi(optarg);
+            }
+            case 'z': {
+                char *end = NULL;
+                long zl = strtol(optarg, &end, 10);
+
+                if (end == optarg || *end != '\0' || zl < 0 || zl > 9) {
+                    fprintf(stderr, "ERROR: Bad compression level '%s' "
+                            "(must be 0-9)\n", optarg);
+                    goto error;
+                }
+                config->out_compress_level = (int)zl;
                 break;
+            }
             case 'c':
                 config->match_combo |= 1;
                 break;

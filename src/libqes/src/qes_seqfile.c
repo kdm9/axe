@@ -70,7 +70,8 @@ read_fastq_seqfile(struct qes_seqfile *seqfile, struct qes_seq *seq)
         goto error;
     }
     while ((next = qes_file_getc(seqfile->qf)) != '\n') {
-        if (next == EOF) {
+        /* EOF (-1), or -2 if the file could not be read (e.g. corrupt gzip) */
+        if (next < 0) {
             goto error;
         }
     }

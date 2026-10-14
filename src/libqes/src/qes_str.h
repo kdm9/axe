@@ -135,7 +135,9 @@ qes_str_copy (struct qes_str *dest, const struct qes_str *src)
     if (!qes_str_ok(src) || dest == NULL) return 1;
     if (!qes_str_ok(dest)) qes_str_init(dest, src->capacity);
     else qes_str_resize(dest, src->capacity);
-    memcpy(dest->str, src->str, src->capacity);
+    memcpy(dest->str, src->str, src->len);
+    dest->str[src->len] = '\0';
+    dest->len = src->len;
     return 0;
 }
 
