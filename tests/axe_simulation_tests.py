@@ -7,7 +7,11 @@ import sys
 import tempfile
 import unittest
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    print("numpy not available, skipping simulation tests")
+    sys.exit(0)
 
 BINDIR = sys.argv.pop(1) if len(sys.argv) > 1 else "."
 AXE = os.path.join(BINDIR, "bin", "axe-demux")

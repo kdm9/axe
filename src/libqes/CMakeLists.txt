@@ -103,6 +103,13 @@ ENDIF()
 
 IF (NOT ${NO_OPENMP})
     FIND_PACKAGE(OpenMP)
+    IF (OpenMP_C_FOUND)
+        SET(OPENMP_FOUND TRUE)
+    ELSE()
+        # Leaves OpenMP_C_FLAGS as "NOTFOUND", which would end up as a flag
+        SET(OPENMP_FOUND FALSE)
+        SET(OpenMP_C_FLAGS "")
+    ENDIF()
 ELSE()
     SET(OPENMP_FOUND FALSE)
     SET(OpenMP_C_FLAGS "")
