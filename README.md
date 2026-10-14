@@ -82,6 +82,7 @@ use `make install` not `sudo make install` when installing to a home directory.
 - libqes, tinytest, libgsl and libdatrie (bundled in source, if you used
   `git clone --recursive` or an installation tarball. Otherwise, run
   `git submodule update --init`).
+- on OSX: `brew install libomp` to get OpenMP
 
 You'll possibly need to install zlib to your chosen prefix (e.g. `~/`) on
 supercomputers, which often have very old versions of zlib. To do so:

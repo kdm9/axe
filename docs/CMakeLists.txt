@@ -1,5 +1,8 @@
+# Docs are not built by default: a broken sphinx install shouldn't stop axe
+# from building. Use -DBUILD_DOCS=ON to build (and install) them.
+OPTION(BUILD_DOCS "Build the documentation with sphinx" OFF)
 FIND_PROGRAM(SPHINXBUILD sphinx-build)
-IF(SPHINXBUILD)
+IF(SPHINXBUILD AND BUILD_DOCS)
     SET(ALLSPHINXOPTS -q -D latex_paper_size=a4)
     ADD_CUSTOM_TARGET(doc_html
         COMMAND ${SPHINXBUILD} -b html ${ALLSPHINXOPTS} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/doc/html
@@ -20,7 +23,7 @@ IF(SPHINXBUILD)
     ADD_CUSTOM_TARGET(doc ALL DEPENDS doc_man doc_html doc_onehtml)
     INSTALL(FILES ${CMAKE_BINARY_DIR}/doc/man/axe.1 DESTINATION "share/man/man1" RENAME "axe-demux.1")
     SET_DIRECTORY_PROPERTIES(PROPERTY ADDITIONAL_MAKE_CLEAN_FILES doc/)
-ELSE()
-    MESSAGE(WARNING "Cannot build documenation, sphinx isn't installed")
+ELSEIF(BUILD_DOCS)
+    MESSAGE(FATAL_ERROR "BUILD_DOCS is ON, but sphinx-build wasn't found")
 ENDIF()
 

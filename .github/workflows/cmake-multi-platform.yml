@@ -18,13 +18,16 @@ jobs:
 
       # axe is POSIX-only (unistd.h, getopt.h, ...), so no MSVC/Windows job.
       matrix:
-        os: [ubuntu-latest]
         build_type: [Release]
-        c_compiler: [gcc, clang]
         include:
-          - c_compiler: gcc
+          - os: ubuntu-latest
+            c_compiler: gcc
             cpp_compiler: g++
-          - c_compiler: clang
+          - os: ubuntu-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+          - os: macos-latest
+            c_compiler: clang
             cpp_compiler: clang++
 
     steps:
