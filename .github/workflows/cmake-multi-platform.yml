@@ -18,15 +18,17 @@ jobs:
 
       # axe is POSIX-only (unistd.h, getopt.h, ...), so no MSVC/Windows job.
       matrix:
-        build_type: [Release]
         include:
           - os: ubuntu-latest
+            build_type: Release
             c_compiler: gcc
             cpp_compiler: g++
           - os: ubuntu-latest
+            build_type: Release
             c_compiler: clang
             cpp_compiler: clang++
           - os: macos-latest
+            build_type: Release
             c_compiler: clang
             cpp_compiler: clang++
 
@@ -65,4 +67,4 @@ jobs:
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --build-config ${{ matrix.build_type }}
+      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
