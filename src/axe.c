@@ -652,16 +652,14 @@ struct axe_load_ctx {
     int failed;
 };
 
-/* Copy the unambiguous mutants collected for one mismatch level into the
- * real trie. Ambiguous ones were marked with a negative value. */
+/* Copy the mutants collected for one mismatch level into the real trie. */
 static bool
 axe_load_candidate_cb(const AlphaChar *key, TrieData data, void *user_data)
 {
     struct axe_load_ctx *ctx = user_data;
 
-    if (data < 0) {
-        return true;
-    }
+    /* Ambiguous mutants are kept (with a negative value) so that they also
+     * block more distant mutants of other barcodes. They never match. */
     if (axe_trie_add(ctx->trie, key, data) != 0) {
         ctx->failed = 1;
         return false;
@@ -1652,13 +1650,14 @@ axe_trie_add(struct axe_trie *trie, const char *str, intptr_t data)
 
 /* Find the barcode that is a prefix of ``seq`` (the longest, if more than one),
  * and store its trie value in ``*value``. Returns 0 on a match, 1 if there is
- * none, and -1 on error. ``*value`` is -1 unless a match is found. */
+ * none, and -1 on error. ``*value`` is -1 unless a match is found. Ambiguous
+ * entries (negative values) are not matches. */
 int
 axe_match_read (struct axe_config *config, intptr_t *value,
                 struct axe_trie *trie, const struct qes_seq *seq)
 {
     TrieState *iter = NULL;
-    TrieState *last_good = NULL;
+    TrieState *probe = NULL;
     size_t seq_pos = 0;
     int ret = 1;
 
@@ -1667,42 +1666,33 @@ axe_match_read (struct axe_config *config, intptr_t *value,
     }
     *value = -1;
     iter = trie_root(trie->trie);
-    last_good = trie_root(trie->trie);
-    if (iter == NULL || last_good == NULL) {
+    probe = trie_root(trie->trie);
+    if (iter == NULL || probe == NULL) {
         qes_log_message_fatal(config->logger,
                               "match_read -- trie_root() returned NULL!\n");
         ret = -1;
         goto exit;
     }
     /* Consume the read for as long as it follows a path in the trie, and no
-     * further than its end. Whenever we are at the end of a barcode, remember
-     * that state. */
+     * further than its end. At the end of each barcode, look up its value. */
     for (seq_pos = 0; seq_pos < seq->seq.len; seq_pos++) {
         if (!trie_state_walk(iter, seq->seq.str[seq_pos])) {
             break;
         }
         if (trie_state_is_terminal(iter)) {
-            trie_state_copy(last_good, iter);
-            ret = 0;
-        }
-    }
-    if (ret == 0) {
-        intptr_t data = -1;
-
-        /* Step through the terminator to reach the leaf holding the data. */
-        if (trie_state_walk(last_good, '\0')) {
-            data = (intptr_t)trie_state_get_data(last_good);
-        }
-        if (data < 0) {
-            ret = 1;
-        } else {
-            *value = data;
+            trie_state_copy(probe, iter);
+            /* Step through the terminator to reach the leaf with the data */
+            if (trie_state_walk(probe, '\0') &&
+                    (intptr_t)trie_state_get_data(probe) >= 0) {
+                *value = (intptr_t)trie_state_get_data(probe);
+                ret = 0;
+            }
         }
     }
 
 exit:
     trie_state_free(iter);
-    trie_state_free(last_good);
+    trie_state_free(probe);
     return ret;
 }
 

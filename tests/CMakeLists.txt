@@ -10,6 +10,7 @@ ADD_CUSTOM_TARGET(setup_tests ALL
                    ${CMAKE_BINARY_DIR}/data
 	COMMAND ${CMAKE_COMMAND} -E copy
                    ${CMAKE_CURRENT_SOURCE_DIR}/axe_cli_tests.py
+                   ${CMAKE_CURRENT_SOURCE_DIR}/axe_simulation_tests.py
                    ${CMAKE_BINARY_DIR}/bin
 	COMMAND ${CMAKE_COMMAND} -E make_directory
                    ${CMAKE_BINARY_DIR}/out)
@@ -21,6 +22,10 @@ SET(COVERAGE_OUT "${CMAKE_BINARY_DIR}/coverage_html")
 
 ADD_TEST(NAME "IntegrationTests" COMMAND python3
          ${CMAKE_BINARY_DIR}/bin/axe_cli_tests.py
+         ${CMAKE_BINARY_DIR})
+
+ADD_TEST(NAME "SimulationTests" COMMAND python3
+         ${CMAKE_BINARY_DIR}/bin/axe_simulation_tests.py
          ${CMAKE_BINARY_DIR})
 
 IF (CMAKE_BUILD_TYPE STREQUAL "Coverage")
